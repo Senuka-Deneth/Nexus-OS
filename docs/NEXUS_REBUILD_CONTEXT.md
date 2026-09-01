@@ -57,30 +57,24 @@ Tenant isolation (RLS) · `workflow_logs` observability · durable idempotency (
   endpoint (same pattern as WF2's classify call) instead of a native credential — see
   `n8n_logic/exports/README.md`. WF2 was also re-wired live to match: `Classify Message` now calls
   `/api/internal/n8n/ai/classify` and `Create Lead` calls `/api/internal/n8n/leads`, removing the
-  direct `api.openai.com` call and the Supabase service-role write. **Caveat:** these live n8n
-  workflows call `$vars.NEXUS_APP_URL` (production), but `main` is currently missing nearly the
-  entire `/api/internal/n8n/*` surface these calls depend on (only 4 of ~20 endpoints exist there —
-  see §4 note). They will 404 in production until `issue-fix2` is merged and deployed.
+  direct `api.openai.com` call and the Supabase service-role write. WF4/WF5 were rewired again
+  2026-09-01 to POST `/api/internal/n8n/followups/drain` and `/api/internal/n8n/daily-report`
+  (no Supabase REST from n8n). This checkout includes the full `/api/internal/n8n/*` surface.
 - Approval flow (`app/api/approval/route.ts`, `/approval` page).
 - Multi-tenant model: `teams → workspaces → profiles → business_profiles`, RLS helpers
   (`private.current_team_id()`, `public.is_workspace_owner()`).
-- Internal n8n ingest endpoints (`app/api/internal/n8n/*`) with `N8N_INGEST_TOKEN`. **On the
-  `issue-fix2` branch only** — `main` currently ships just 4 of these routes (`conversations`,
-  `gmail-credentials`, `meta-credentials`, `workflow-logs`); everything else (`ai/classify`,
-  `ai/draft`, `ai/report-summary`, `leads`, `send-reply`, `outbound-jobs/*`, `scheduled-posts`,
-  `social-credentials`, `gmail-sync`, `gmail-backfill`, `inbound-replay`, `inbound-record`,
-  `autopilot-send`, `post-result`, `match-embeddings`, `ai-usage`) is unmerged. Every live n8n
-  workflow above calls these by production URL — **merging + deploying `issue-fix2` is the single
-  highest-priority manual step**; until then WF2/WF3/WF4/WF8b/WF8d/approval-send all 404 silently
-  in production even though they're "active."
+- Internal n8n ingest endpoints (`app/api/internal/n8n/*`) with bootstrap/ingest tokens. This
+  checkout includes classify/draft/leads/send-reply/outbound-jobs/scheduled-posts/social-post/
+  social-credentials/gmail-sync/backfill/inbound-replay/followups-drain/daily-report/post-result.
+  The older “issue-fix2 not on main / 404” note is stale here.
 - Design tokens + 5 hand-built UI components (`components/ui/`). shadcn is configured in
   `components.json` but NOT installed (no Radix / CVA in package.json).
 - **Knowledge layer + Chat Agent** (shipped 2026-07-14, detailed in §5) — pgvector `embeddings` +
   `business_documents`, read-only retrieval-backed Chat Agent at `/chat`.
 - **Social publishing studio** (shipped 2026-07-09→15) — in-app OpenAI caption/image generation
-  (`lib/posts/ai.ts`), manual/schedule/upload composer, WF8b (publish) + WF8d (scheduler, inactive
-  until platform credentials bind) — see `n8n_logic/exports/README.md`. This was previously listed
-  under "Deferred" below; that was stale.
+  (`lib/posts/ai.ts`), manual/schedule/upload composer, WF8b (publish; signed media + post-result)
+  + WF8d (scheduler, **inactive** until a real scheduled post — quota) — see
+  `n8n_logic/exports/README.md`. Composer Schedule stamps approval so WF8d can claim those rows.
 - **Meta inbound durable ledger** (shipped 2026-06-24, Task 1/2 in §5) — `inbound_events` table,
   persist-before-ack, edge tenant resolution. Previously listed as a "half-built" weak spot below;
   that framing was stale — see the corrected list.
