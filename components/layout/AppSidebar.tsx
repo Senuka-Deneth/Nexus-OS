@@ -226,20 +226,24 @@ function SidebarChrome({
   collapsed,
   onToggleCollapse,
   onNavigate,
+  showHeader = true,
   className,
 }: {
   collapsed: boolean;
   onToggleCollapse?: () => void;
   onNavigate?: () => void;
+  showHeader?: boolean;
   className?: string;
 }) {
   return (
     <div className={cn("app-sidebar-inner flex h-full min-h-0 flex-col", className)}>
-      <SidebarHeader
-        collapsed={collapsed}
-        onToggleCollapse={onToggleCollapse ?? (() => {})}
-        onNavigate={onNavigate}
-      />
+      {showHeader ? (
+        <SidebarHeader
+          collapsed={collapsed}
+          onToggleCollapse={onToggleCollapse ?? (() => {})}
+          onNavigate={onNavigate}
+        />
+      ) : null}
       <SidebarNav collapsed={collapsed} onNavigate={onNavigate} />
       <SidebarFooter collapsed={collapsed} onNavigate={onNavigate} />
     </div>
@@ -329,7 +333,7 @@ export default function AppSidebar({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
               aria-label="Close navigation menu"
               onClick={closeMobile}
             />
@@ -340,7 +344,7 @@ export default function AppSidebar({
               transition={{ type: "spring", stiffness: 380, damping: 36 }}
               className="app-sidebar fixed inset-y-0 left-0 top-0 z-50 flex h-svh min-h-svh max-h-svh w-[min(18rem,85vw)] flex-col overflow-hidden lg:hidden"
             >
-              <div className="mb-4 flex shrink-0 items-center justify-between gap-3 px-4 pt-4">
+              <div className="mb-2 flex shrink-0 items-center justify-between gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
                 <Link
                   href="/dashboard"
                   onClick={closeMobile}
@@ -352,7 +356,7 @@ export default function AppSidebar({
                 <button
                   type="button"
                   onClick={closeMobile}
-                  className="app-sidebar-chrome-btn inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+                  className="app-sidebar-chrome-btn inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" aria-hidden />
@@ -360,8 +364,9 @@ export default function AppSidebar({
               </div>
               <SidebarChrome
                 collapsed={false}
+                showHeader={false}
                 onNavigate={closeMobile}
-                className="min-h-0 flex-1 px-4 pb-6"
+                className="min-h-0 flex-1 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
               />
             </motion.aside>
           </>

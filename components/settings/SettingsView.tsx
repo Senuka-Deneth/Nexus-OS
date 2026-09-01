@@ -518,7 +518,7 @@ export function SettingsView() {
     <div className="min-h-0 space-y-10">
       <header className="hairline-b pb-8">
         <p className="nexus-meta text-nexus-approval">Account</p>
-        <h1 className="mt-3 nexus-app-title text-atmospheric-grey">Settings</h1>
+        <h1 className="mt-3 nexus-app-title text-balance text-atmospheric-grey">Settings</h1>
         <p className="mb-2 mt-4 max-w-2xl text-base leading-relaxed text-muted">
           Manage your account, workspace profile, connected channels, AI approval rules,
           billing, and security preferences.

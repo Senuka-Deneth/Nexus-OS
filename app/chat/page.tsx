@@ -382,7 +382,7 @@ export default function ChatPage() {
             <span>New chat</span>
           </button>
         </div>
-        <h1 className="nexus-app-title text-foreground">Chat</h1>
+        <h1 className="nexus-app-title text-balance text-foreground">Chat</h1>
         <p className="mt-2 flex items-center gap-2 text-base text-muted">
           <Sparkles className="h-5 w-5 shrink-0 text-nexus-discovery" aria-hidden />
           Read-only. Answers only from your real inbox data. It never sends or edits anything.
@@ -444,7 +444,7 @@ export default function ChatPage() {
                 >
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed",
+                      "max-w-[80%] min-w-0 break-words rounded-xl px-4 py-3 text-sm leading-relaxed",
                       m.role === "user"
                         ? "glass-pill whitespace-pre-wrap border-glass-border bg-glass text-atmospheric-grey"
                         : "glass-pill w-full border-glass-border bg-glass/70 text-atmospheric-grey sm:w-auto sm:min-w-[280px]",
@@ -476,7 +476,7 @@ export default function ChatPage() {
         ) : null}
 
         <form
-          className="flex shrink-0 items-end gap-2 border-t border-glass-border p-3"
+          className="sticky bottom-0 flex shrink-0 items-end gap-2 border-t border-glass-border bg-[var(--surface-card)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           onSubmit={(e) => {
             e.preventDefault();
             void send(input);

@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ExecutiveEmptyState } from "@/components/ui/ExecutiveEmptyState";
 import { Spinner } from "@/components/ui/Spinner";
+import { TableScrollHint } from "@/components/ui/TableScrollHint";
 import { useTenantScope } from "@/components/tenant/TenantScope";
 import { cn, formatCurrency } from "@/lib/utils";
 import { aiUsageQuery, conversationsQuery, dailyReportQuery } from "@/lib/queries/fetchers";
@@ -239,8 +240,8 @@ function AiUsageCard({
       ) : null}
 
       {usage.rows.length > 0 ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full border-collapse text-xs">
+        <TableScrollHint hint="Swipe sideways for usage columns">
+          <table className="w-full min-w-[28rem] border-collapse text-xs">
             <thead>
               <tr className="text-left text-muted">
                 <th className="border-b border-glass-border px-2 py-1.5 font-semibold">
@@ -282,7 +283,7 @@ function AiUsageCard({
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScrollHint>
       ) : (
         <p className="mt-3 text-xs text-muted">
           No AI usage recorded yet this month.
@@ -533,7 +534,7 @@ export default function ReportPage() {
 
             <section
               aria-labelledby="conversation-breakdown"
-              className="app-glass-card overflow-hidden rounded-xl"
+              className="app-glass-card min-w-0 overflow-hidden rounded-xl"
             >
               <div className="flex flex-col gap-3 hairline-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -558,7 +559,7 @@ export default function ReportPage() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
+              <TableScrollHint>
                 <table className="min-w-full text-base">
                   <thead className="bg-glass/60">
                     <tr className="hairline-b">
@@ -655,7 +656,7 @@ export default function ReportPage() {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </TableScrollHint>
             </section>
           </>
         ) : reportErrorMsg ? (

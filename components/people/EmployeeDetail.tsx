@@ -140,7 +140,7 @@ export function EmployeeDetail({ employeeId }: { employeeId: string }) {
         </Link>
         <p className="mt-4 nexus-meta text-nexus-approval">People</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="nexus-app-title text-atmospheric-grey">
+          <h1 className="nexus-app-title text-balance text-atmospheric-grey">
             {employee.full_name}
           </h1>
           <EmployeeStatusPill status={employee.employment_status} />
