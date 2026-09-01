@@ -1,7 +1,8 @@
 # Nexus OS — Rebuild Context & Build State
 
-Companion to `/CLAUDE.md`. This file tells you **where the build is now**, **the target
-architecture**, and **the order of work**. Last grounded against the repo: 2026-07-17
+Companion to `.cursor/rules/nexus.mdc`. This file tells you **where the build is now**, **the target
+architecture**, and **the order of work**. People Intelligence / operating-layer expansion is specified in
+`docs/NEXUS_OPERATING_LAYER_PLAN.md` — do not follow retired blueprint docs. Last grounded against the repo: 2026-07-17
 (pre-launch audit — reconciled §2/§4 with the dated decisions in §5, which had drifted out of
 sync with the main body for three weeks).
 
@@ -112,8 +113,10 @@ Built:
    kill-switched behind `META_SEND_ENABLED` (unset by default) pending Meta App Review. Not a bug.
 
 ### Deferred (do not start yet)
-Hiring/ATS section. See `docs/full_new_implementation_blueprint.md`. (Social publishing studio and
-AI image generation, previously listed here, shipped — see "Done" above.)
+Hiring / People Intelligence — specified, not yet built. Canonical plan:
+`docs/NEXUS_OPERATING_LAYER_PLAN.md`. Do not start People work except as a numbered partition
+in that plan. (Social publishing studio and AI image generation, previously listed here, shipped —
+see "Done" above.)
 
 ---
 
@@ -143,12 +146,14 @@ UI and pricing are owned by other members; this track is backend/functions.
 6. **Meta outbound** (approval-gated, messaging-window rules) — code complete, kill-switched on
    `META_SEND_ENABLED` pending Meta App Review.
 7. ~~Media studio / image gen~~ — **done** (social publishing studio, shipped 2026-07-09→15).
-   Hiring/ATS remains deferred. Production-reliability hardening (durable queues, per-tenant
+8. **People Intelligence** — specified in `docs/NEXUS_OPERATING_LAYER_PLAN.md`; implement only as
+   numbered partitions from that plan (not an ATS bolt-on).
+9. Production-reliability hardening (durable queues, per-tenant
    `N8N_INGEST_TOKEN` scoping, replay tooling) is ongoing — see
    `docs/security_audit_and_review_2026-07-15.md` blocker #7.
 
 Each step ships behind the existing safety model (RLS, approval gate, encrypted tokens) and ends
-with the report-back block from `CLAUDE.md`.
+with the report-back block from `.cursor/rules/nexus.mdc`.
 
 ---
 
