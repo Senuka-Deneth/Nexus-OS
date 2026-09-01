@@ -215,11 +215,14 @@ export interface WorkspaceSettings {
   };
 }
 
-export type EmploymentStatus =
-  | "active"
-  | "onboarding"
-  | "resignation_pending"
-  | "offboarded";
+export const EMPLOYMENT_STATUSES = [
+  "active",
+  "onboarding",
+  "resignation_pending",
+  "offboarded",
+] as const;
+
+export type EmploymentStatus = (typeof EMPLOYMENT_STATUSES)[number];
 
 /** A row from `employees` (People roster). Soft-archive via `archived_at`. */
 export interface Employee {

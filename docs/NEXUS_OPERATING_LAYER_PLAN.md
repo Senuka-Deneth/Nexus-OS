@@ -43,8 +43,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **B1** Employee service + API. Depends: A1, A2. — 2026-09-01 — `lib/people/employees.ts`, `app/api/people/employees/route.ts`, `app/api/people/employees/[id]/route.ts`, `scripts/people_employees_api.test.ts`
   Done: 2026-09-01 — `lib/people/employees.ts`, `app/api/people/employees/route.ts`, `app/api/people/employees/[id]/route.ts`, `scripts/people_employees_api.test.ts`
 
-- [ ] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1.  
-  Done:
+- [x] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1. — 2026-09-01 — `app/people/page.tsx`, `components/people/*`, `lib/queries/fetchers.ts`, `components/layout/AppSidebar.tsx`
+  Done: 2026-09-01 — `app/people/page.tsx`, `app/people/new/page.tsx`, `app/people/[id]/page.tsx`, `components/people/*`, `lib/queries/keys.ts`, `lib/queries/fetchers.ts`, `lib/queries/nav-prefetch.ts`, `components/layout/AppSidebar.tsx`, `middleware.ts`
 
 - [ ] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none.  
   Done:
@@ -226,7 +226,7 @@ Do not spend a conversation re-deriving this. Re-inspect files you will *edit*; 
 | Approval | `lib/approval-policy.ts` + `/approval` + `reply_drafts` |
 | Tenancy | Pipeline: `teams` → `workspaces` → `team_id` / `workspace_id`. Social: `organizations`. Bridge: `teams.organization_id` (`20260717120000_teams_organization_id_bridge.sql`) |
 | API auth | `requireApiTenantContext()` in `lib/api-security.ts` (user + `profiles.team_id` + first workspace). Rate limits on routes |
-| Nav | `components/layout/AppSidebar.tsx` — `/dashboard` `/inbox` `/approval` `/report` `/posts` `/chat` `/team` `/profile` |
+| Nav | `components/layout/AppSidebar.tsx` — `/dashboard` `/inbox` `/approval` `/report` `/posts` `/chat` `/people` `/team` `/profile` |
 | `/team` | **Nexus workspace invites** (`app/team/page.tsx` → `InviteManager`). **Not company employees.** People UI must be `/people` |
 | UI kit | Hand-built `components/ui/*` (Button, Card, Badge, EmptyState, FilterChip, Spinner, …). shadcn is configured, not installed |
 | Data UI | React Query + `lib/queries/fetchers.ts` + `lib/queries/keys.ts` + `authenticatedFetch` |

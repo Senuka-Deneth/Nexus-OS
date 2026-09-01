@@ -3,6 +3,8 @@ import type { TenantScopeValue } from "@/components/tenant/TenantScope";
 import {
   conversationsQuery,
   dailyReportQuery,
+  EMPLOYEES_PAGE_SIZE,
+  employeesQuery,
   metricsQuery,
   replyDraftsQuery,
   settingsQuery,
@@ -68,6 +70,23 @@ export function prefetchNavRoute(
     void queryClient.prefetchQuery({
       queryKey: queryKeys.conversations(teamId, 100),
       queryFn: () => conversationsQuery(100),
+      staleTime: STALE,
+    });
+    return;
+  }
+
+  if (href === "/people" || href.startsWith("/people")) {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.employees(
+        teamId,
+        "",
+        "",
+        false,
+        EMPLOYEES_PAGE_SIZE,
+        0,
+      ),
+      queryFn: () =>
+        employeesQuery({ limit: EMPLOYEES_PAGE_SIZE, offset: 0 }),
       staleTime: STALE,
     });
     return;

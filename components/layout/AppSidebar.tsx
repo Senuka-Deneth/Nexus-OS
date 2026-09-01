@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
+  ContactRound,
   FileText,
   ImageIcon,
   Inbox,
@@ -36,6 +37,7 @@ const appNav = [
   { href: "/report", label: "Buy-Back Report", icon: FileText },
   { href: "/posts", label: "Posts", icon: ImageIcon },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/people", label: "People", icon: ContactRound },
   { href: "/team", label: "Team", icon: Users },
   { href: "/profile", label: "Settings", icon: Settings },
 ] as const;

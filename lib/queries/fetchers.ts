@@ -3,6 +3,8 @@ import type {
   AiUsageSummary,
   Conversation,
   DailyReport,
+  Employee,
+  EmploymentStatus,
   Metrics,
   MetricsTimeseries,
   MetricsTimeseriesRange,
@@ -254,4 +256,109 @@ export async function deleteBusinessDoc(id: string): Promise<void> {
     const json = await readJson<{ error?: string }>(res);
     throw new Error(errFrom(res, json));
   }
+}
+
+// --- People employees (roster) ------------------------------------------------
+
+export const EMPLOYEES_PAGE_SIZE = 50;
+
+export type EmployeesListParams = {
+  q?: string | null;
+  employmentStatus?: string | null;
+  includeArchived?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+export type EmployeesListResult = {
+  data: Employee[];
+  count: number;
+};
+
+export type EmployeeWriteBody = {
+  full_name?: string;
+  email?: string | null;
+  phone?: string | null;
+  role_title?: string | null;
+  employment_status?: EmploymentStatus;
+  started_on?: string | null;
+  ended_on?: string | null;
+  location?: string | null;
+  notes?: string | null;
+  archived?: boolean;
+};
+
+export async function employeesQuery(
+  params: EmployeesListParams = {},
+): Promise<EmployeesListResult> {
+  const search = new URLSearchParams();
+  const q = params.q?.trim();
+  if (q) search.set("q", q.slice(0, 200));
+  if (params.employmentStatus) {
+    search.set("employment_status", params.employmentStatus);
+  }
+  if (params.includeArchived) search.set("include_archived", "true");
+  search.set("limit", String(params.limit ?? EMPLOYEES_PAGE_SIZE));
+  search.set("offset", String(params.offset ?? 0));
+
+  const res = await authenticatedFetch(`/api/people/employees?${search.toString()}`);
+  const json = await readJson<{ data?: Employee[]; count?: number; error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!Array.isArray(json.data)) {
+    throw new Error("Invalid employees response");
+  }
+  return {
+    data: json.data,
+    count: typeof json.count === "number" ? json.count : json.data.length,
+  };
+}
+
+export async function employeeQuery(id: string): Promise<Employee> {
+  const res = await authenticatedFetch(
+    `/api/people/employees/${encodeURIComponent(id)}`,
+  );
+  const json = await readJson<{ data?: Employee; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid employee response");
+  }
+  return json.data;
+}
+
+export async function createEmployeeMutation(
+  body: EmployeeWriteBody,
+): Promise<Employee> {
+  const res = await authenticatedFetch("/api/people/employees", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<{ data?: Employee; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid employee response");
+  }
+  return json.data;
+}
+
+export async function updateEmployeeMutation(
+  id: string,
+  body: EmployeeWriteBody,
+): Promise<Employee> {
+  const res = await authenticatedFetch(
+    `/api/people/employees/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: Employee; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid employee response");
+  }
+  return json.data;
 }

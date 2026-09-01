@@ -2,14 +2,13 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { writeAuditEvent } from "@/lib/audit";
-import type { Employee, EmploymentStatus } from "@/types";
+import {
+  EMPLOYMENT_STATUSES,
+  type Employee,
+  type EmploymentStatus,
+} from "@/types";
 
-export const EMPLOYMENT_STATUSES: readonly EmploymentStatus[] = [
-  "active",
-  "onboarding",
-  "resignation_pending",
-  "offboarded",
-];
+export { EMPLOYMENT_STATUSES };
 
 const CREATE_FIELDS = [
   "full_name",

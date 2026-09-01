@@ -38,4 +38,25 @@ export const queryKeys = {
 
   workflowLogs: (teamId: string | null, resultFilter: string, offset: number) =>
     [...queryKeys.root(teamId), "workflowLogs", resultFilter, offset] as const,
+
+  employees: (
+    teamId: string | null,
+    q: string,
+    employmentStatus: string,
+    includeArchived: boolean,
+    limit: number,
+    offset: number,
+  ) =>
+    [
+      ...queryKeys.root(teamId),
+      "employees",
+      q,
+      employmentStatus,
+      includeArchived,
+      limit,
+      offset,
+    ] as const,
+
+  employee: (teamId: string | null, id: string) =>
+    [...queryKeys.root(teamId), "employee", id] as const,
 } as const;
