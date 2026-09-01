@@ -40,8 +40,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **A2** People schema + RLS (`employees`, `jobs`, `candidates`, `candidate_jobs`). Depends: none (can run same day as A1, not in the same conversation). — 2026-09-01 — `supabase/migrations/20260901130000_people_schema.sql`, `scripts/people_schema.test.ts`
   Done: 2026-09-01 — `supabase/migrations/20260901130000_people_schema.sql`, `scripts/people_schema.test.ts`
 
-- [ ] **B1** Employee service + API. Depends: A1, A2.  
-  Done:
+- [x] **B1** Employee service + API. Depends: A1, A2. — 2026-09-01 — `lib/people/employees.ts`, `app/api/people/employees/route.ts`, `app/api/people/employees/[id]/route.ts`, `scripts/people_employees_api.test.ts`
+  Done: 2026-09-01 — `lib/people/employees.ts`, `app/api/people/employees/route.ts`, `app/api/people/employees/[id]/route.ts`, `scripts/people_employees_api.test.ts`
 
 - [ ] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1.  
   Done:

@@ -215,6 +215,31 @@ export interface WorkspaceSettings {
   };
 }
 
+export type EmploymentStatus =
+  | "active"
+  | "onboarding"
+  | "resignation_pending"
+  | "offboarded";
+
+/** A row from `employees` (People roster). Soft-archive via `archived_at`. */
+export interface Employee {
+  id: string;
+  team_id: string;
+  workspace_id: string | null;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role_title: string | null;
+  employment_status: EmploymentStatus;
+  started_on: string | null;
+  ended_on: string | null;
+  location: string | null;
+  notes: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;
