@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AuthSplitLayout } from "@/components/auth/AuthSplitLayout";
 import ProgressBar from "@/components/signup/ProgressBar";
 import StepAccount from "@/components/signup/StepAccount";
 import StepDone from "@/components/signup/StepDone";
@@ -16,6 +16,7 @@ import {
   saveSignupSnapshot,
   type SignupSnapshot,
 } from "@/components/signup/types";
+import { signupBrandForStep } from "@/lib/auth/brandCopy";
 import { parsePlanFromUrl } from "@/lib/pricing/plans";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { fetchInvitePreview, type InvitePreview } from "@/lib/invites";
@@ -260,72 +261,58 @@ export default function SignupPage() {
     }));
   }, []);
 
+  const brand = signupBrandForStep(snapshot.currentStep);
+  const formWide = snapshot.currentStep === 3;
+
   return (
-    <div className="min-h-screen px-4 py-8 sm:py-12">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-8 hairline-b pb-8 text-center sm:mb-10">
-          <p className="nexus-meta text-nexus-approval">
-            Onboard workspace
-          </p>
-          <h1 className="mt-4 nexus-section-title text-atmospheric-grey">
-            Revenue command center
-          </h1>
-          <p className="mx-auto mt-3 max-w-lg nexus-body text-muted">
-            Create a workspace, connect Gmail, and choose the automation setup that fits your team.
-          </p>
-          <p className="mt-4 text-sm text-muted">
-            Already registered?{" "}
-            <Link href="/login" className="cursor-pointer font-medium text-nexus-approval underline underline-offset-4">
-              Sign in
-            </Link>
-          </p>
-          {inviteToken && inviteStatusError ? (
-            <p
-              role="alert"
-              className="mx-auto mt-5 max-w-lg rounded-xl border border-status-warning-border bg-status-warning-surface px-4 py-3 text-sm text-status-warning"
-            >
-              {inviteStatusError}
-            </p>
-          ) : validInvite && invitePreview ? (
-            <p className="mx-auto mt-5 max-w-lg rounded-xl border border-nexus-approval-border bg-nexus-approval-soft px-4 py-3 text-sm text-nexus-approval">
-              You&apos;re joining <span className="font-semibold">{invitePreview.organization_name}</span>.
-            </p>
+    <AuthSplitLayout mode="signup" brand={brand} formWidth={formWide ? "wide" : "default"}>
+      {inviteToken && inviteStatusError ? (
+        <p
+          role="alert"
+          className="mb-6 rounded-xl border border-status-warning-border bg-status-warning-surface px-4 py-3 text-[14px] text-status-warning"
+        >
+          {inviteStatusError}
+        </p>
+      ) : validInvite && invitePreview ? (
+        <p className="mb-6 rounded-xl border border-[color:var(--nexus-approval-border)] bg-[color:var(--nexus-approval-soft)] px-4 py-3 text-[14px] text-[color:var(--nexus-approval)]">
+          You&apos;re joining{" "}
+          <span className="font-semibold">{invitePreview.organization_name}</span>.
+        </p>
+      ) : null}
+
+      <div className="rounded-2xl border border-[color:var(--apple-hairline)] bg-white p-4 landing-elev-1 sm:p-8">
+        <ProgressBar currentStep={snapshot.currentStep} steps={STEP_LABELS} />
+        <div className="mt-8 border-t border-[color:var(--apple-hairline)] pt-8 sm:mt-10">
+          {snapshot.currentStep === 1 ? (
+            <StepAccount
+              snapshot={snapshot}
+              onPatch={patchSnapshot}
+              onNext={() => goToStep(2)}
+              inviteToken={validInvite ? inviteToken : null}
+              inviteOrgName={validInvite ? invitePreview?.organization_name ?? null : null}
+            />
           ) : null}
-        </header>
-        <div className="app-glass-card rounded-2xl p-4 sm:p-8">
-          <ProgressBar currentStep={snapshot.currentStep} steps={STEP_LABELS} />
-          <div className="mt-8 hairline-t pt-8 sm:mt-10">
-            {snapshot.currentStep === 1 ? (
-              <StepAccount
-                snapshot={snapshot}
-                onPatch={patchSnapshot}
-                onNext={() => goToStep(2)}
-                inviteToken={validInvite ? inviteToken : null}
-                inviteOrgName={validInvite ? invitePreview?.organization_name ?? null : null}
-              />
-            ) : null}
-            {snapshot.currentStep === 2 ? (
-              <StepWorkspace
-                snapshot={snapshot}
-                onComplete={(patch) => goToStep(3, patch)}
-              />
-            ) : null}
-            {snapshot.currentStep === 3 ? (
-              <StepPlan snapshot={snapshot} onComplete={(patch) => goToStep(4, patch)} />
-            ) : null}
-            {snapshot.currentStep === 4 ? (
-              <StepPayment snapshot={snapshot} onNext={() => goToStep(5)} />
-            ) : null}
-            {snapshot.currentStep === 5 ? (
-              <StepGmail
-                snapshot={snapshot}
-                onComplete={(patch) => goToStep(6, patch)}
-              />
-            ) : null}
-            {snapshot.currentStep === 6 ? <StepDone snapshot={snapshot} /> : null}
-          </div>
+          {snapshot.currentStep === 2 ? (
+            <StepWorkspace
+              snapshot={snapshot}
+              onComplete={(patch) => goToStep(3, patch)}
+            />
+          ) : null}
+          {snapshot.currentStep === 3 ? (
+            <StepPlan snapshot={snapshot} onComplete={(patch) => goToStep(4, patch)} />
+          ) : null}
+          {snapshot.currentStep === 4 ? (
+            <StepPayment snapshot={snapshot} onNext={() => goToStep(5)} />
+          ) : null}
+          {snapshot.currentStep === 5 ? (
+            <StepGmail
+              snapshot={snapshot}
+              onComplete={(patch) => goToStep(6, patch)}
+            />
+          ) : null}
+          {snapshot.currentStep === 6 ? <StepDone snapshot={snapshot} /> : null}
         </div>
       </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

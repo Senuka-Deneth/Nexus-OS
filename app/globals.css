@@ -133,15 +133,17 @@
     --btn-primary-fg: #eef4ff;
   }
 
-  html:not(.dark):not(.aurora-dark) .logo-nexus,
+  html:not(.dark):not(.aurora-dark):not(.swiss-dark) .logo-nexus,
   .light .logo-nexus,
   .aurora-light .logo-nexus,
+  .swiss-light .logo-nexus,
   [data-theme="light"] .logo-nexus {
     color: var(--text-primary);
   }
-  html:not(.dark):not(.aurora-dark) .logo-os,
+  html:not(.dark):not(.aurora-dark):not(.swiss-dark) .logo-os,
   .light .logo-os,
   .aurora-light .logo-os,
+  .swiss-light .logo-os,
   [data-theme="light"] .logo-os {
     color: var(--ref-cta);
     letter-spacing: 0;
@@ -424,6 +426,204 @@
     --btn-primary-fg: #eef4ff;
   }
 
+  /* Swiss Day — paper-white, hairline precision (default family light) */
+  .swiss-light {
+    --background: #ffffff;
+    --foreground: #1d1d1f;
+    --obsidian: #1d1d1f;
+    --atmospheric-grey: #1d1d1f;
+    --trajectory-blue: var(--nexus-approval);
+    --ref-cta: var(--nexus-approval);
+    --ref-mint: #f5f5f7;
+
+    --app-chrome-bg: #ffffff;
+    --app-chrome-border: rgba(0, 0, 0, 0.1);
+
+    --surface-page: #ffffff;
+    --surface-card: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-sidebar: #ffffff;
+    --surface-input: #f5f5f7;
+    --surface-muted: #f5f5f7;
+
+    --border-subtle: rgba(0, 0, 0, 0.1);
+    --border-strong: rgba(0, 0, 0, 0.18);
+
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --text-tertiary: #86868b;
+
+    --apple-hairline: rgba(0, 0, 0, 0.1);
+
+    --elev-0: none;
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --elev-2: 0 8px 24px -8px rgba(0, 0, 0, 0.1);
+    --elev-3: 0 24px 48px -16px rgba(0, 0, 0, 0.12);
+
+    --status-positive-fg: #047857;
+    --status-positive-surface: #ecfdf5;
+    --status-positive-border: #a7f3d0;
+    --status-positive-glow: transparent;
+
+    --status-neutral-fg: #4f3ee0;
+    --status-neutral-surface: rgba(93, 62, 251, 0.07);
+    --status-neutral-border: rgba(93, 62, 251, 0.15);
+
+    --status-warning-fg: #c2410c;
+    --status-warning-surface: #fff7ed;
+    --status-warning-border: #fed7aa;
+
+    --status-caution-fg: #b45309;
+    --status-caution-surface: #fffbeb;
+    --status-caution-border: #fde68a;
+
+    --status-critical-fg: #dc2626;
+    --status-critical-surface: #fef2f2;
+    --status-critical-border: #fecaca;
+    --status-critical-glow: transparent;
+
+    --bg-card: var(--surface-card);
+    --bg-page: var(--surface-page);
+    --bg-elevated: var(--surface-elevated);
+    --bg-sidebar: var(--surface-sidebar);
+    --bg-input: var(--surface-input);
+    --text-positive: var(--status-positive-fg);
+    --text-warning: var(--status-warning-fg);
+    --text-critical: var(--status-critical-fg);
+
+    --selectable-card-border: rgba(0, 0, 0, 0.1);
+    --selectable-card-border-selected: #1d1d1f;
+    --selectable-card-border-hover: rgba(0, 0, 0, 0.18);
+
+    --glass-bg: #ffffff;
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-blur: 0px;
+    --glass-highlight: none;
+    --glass-shadow: var(--elev-1);
+    --glass-gradient-start: #ffffff;
+    --glass-gradient-end: #ffffff;
+    --app-orb-1: transparent;
+    --app-orb-2: transparent;
+    --app-orb-3: transparent;
+    --app-sidebar-bg: #ffffff;
+    --app-sidebar-border: rgba(0, 0, 0, 0.1);
+    --app-sidebar-nav-active: #1d1d1f;
+    --app-sidebar-nav-inactive: rgba(29, 29, 31, 0.46);
+    --glass-input-bg: #f5f5f7;
+
+    --app-topbar-bg: #ffffff;
+    --app-topbar-border: rgba(0, 0, 0, 0.1);
+    --app-topbar-search-bg: #f5f5f7;
+    --app-topbar-search-fg: #1d1d1f;
+    --app-topbar-search-placeholder: #6e6e73;
+    --app-topbar-icon-bg: #f5f5f7;
+    --app-topbar-icon-fg: #6e6e73;
+    --app-topbar-accent: #10b981;
+
+    --btn-primary-bg: var(--nexus-approval);
+    --btn-primary-bg-hover: color-mix(in srgb, var(--nexus-approval) 85%, #000);
+    --btn-primary-fg: #eef4ff;
+  }
+
+  /* Swiss Night — matte black, no glow (default theme) */
+  .swiss-dark {
+    --background: #0a0a0a;
+    --foreground: #f5f5f7;
+    --obsidian: #0a0a0a;
+    --atmospheric-grey: #f5f5f7;
+    --trajectory-blue: #75adff;
+    --ref-cta: var(--nexus-approval);
+
+    --app-chrome-bg: #111111;
+    --app-chrome-border: rgba(255, 255, 255, 0.12);
+
+    --surface-page: #0a0a0a;
+    --surface-card: #111111;
+    --surface-elevated: #111111;
+    --surface-sidebar: #0a0a0a;
+    --surface-input: #161616;
+    --surface-muted: #0f0f0f;
+
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.2);
+
+    --text-primary: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #6e6e73;
+    --text-accent: #e8e8ed;
+
+    --apple-hairline: rgba(255, 255, 255, 0.12);
+
+    --elev-0: none;
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: 0 8px 24px -8px rgba(0, 0, 0, 0.55);
+    --elev-3: 0 24px 48px -16px rgba(0, 0, 0, 0.65);
+
+    --status-positive-fg: #34d399;
+    --status-positive-surface: rgba(52, 211, 153, 0.12);
+    --status-positive-border: rgba(52, 211, 153, 0.28);
+    --status-positive-glow: transparent;
+
+    --status-neutral-fg: #a898ff;
+    --status-neutral-surface: rgba(93, 62, 251, 0.12);
+    --status-neutral-border: rgba(93, 62, 251, 0.24);
+
+    --status-warning-fg: #fb923c;
+    --status-warning-surface: rgba(251, 146, 60, 0.12);
+    --status-warning-border: rgba(251, 146, 60, 0.28);
+
+    --status-caution-fg: #fbbf24;
+    --status-caution-surface: rgba(251, 191, 36, 0.12);
+    --status-caution-border: rgba(251, 191, 36, 0.28);
+
+    --status-critical-fg: #f87171;
+    --status-critical-surface: rgba(248, 113, 113, 0.12);
+    --status-critical-border: rgba(248, 113, 113, 0.28);
+    --status-critical-glow: transparent;
+
+    --bg-card: var(--surface-card);
+    --bg-page: var(--surface-page);
+    --bg-elevated: var(--surface-elevated);
+    --bg-sidebar: var(--surface-sidebar);
+    --bg-input: var(--surface-input);
+    --text-positive: var(--status-positive-fg);
+    --text-warning: var(--status-warning-fg);
+    --text-critical: var(--status-critical-fg);
+
+    --selectable-card-border: rgba(255, 255, 255, 0.12);
+    --selectable-card-border-selected: #f5f5f7;
+    --selectable-card-border-hover: rgba(255, 255, 255, 0.22);
+
+    --glass-bg: #111111;
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-blur: 0px;
+    --glass-highlight: none;
+    --glass-shadow: var(--elev-1);
+    --glass-gradient-start: #111111;
+    --glass-gradient-end: #111111;
+    --app-orb-1: transparent;
+    --app-orb-2: transparent;
+    --app-orb-3: transparent;
+    --app-sidebar-bg: #0a0a0a;
+    --app-sidebar-border: rgba(255, 255, 255, 0.12);
+    --app-sidebar-nav-active: #f5f5f7;
+    --app-sidebar-nav-inactive: rgba(245, 245, 247, 0.42);
+    --glass-input-bg: #161616;
+
+    --app-topbar-bg: #0a0a0a;
+    --app-topbar-border: rgba(255, 255, 255, 0.12);
+    --app-topbar-search-bg: #111111;
+    --app-topbar-search-fg: #f5f5f7;
+    --app-topbar-search-placeholder: #a1a1a6;
+    --app-topbar-icon-bg: #111111;
+    --app-topbar-icon-fg: #a1a1a6;
+    --app-topbar-accent: #10b981;
+
+    --btn-primary-bg: var(--nexus-approval);
+    --btn-primary-bg-hover: color-mix(in srgb, var(--nexus-approval) 85%, #000);
+    --btn-primary-fg: #eef4ff;
+  }
+
   body {
     background-color: var(--surface-page, var(--background));
     @apply text-atmospheric-grey antialiased;
@@ -676,7 +876,8 @@
     color: color-mix(in srgb, var(--ref-cta) 88%, var(--app-sidebar-nav-active));
   }
   .dark .app-sidebar .logo-os,
-  .aurora-dark .app-sidebar .logo-os {
+  .aurora-dark .app-sidebar .logo-os,
+  .swiss-dark .app-sidebar .logo-os {
     color: color-mix(in srgb, var(--app-sidebar-nav-active) 62%, transparent);
   }
   .nexus-app-shell[data-font-scale="compact"] {
@@ -701,44 +902,44 @@
     box-shadow: var(--glass-shadow);
   }
 
-  /* Aurora themes: flat opaque surfaces — no glass blur, gradients, or ambient orbs */
-  :is(.aurora-light, .aurora-dark) .app-shell-bg::before {
+  /* Flat opaque surfaces — Aurora + Swiss: no glass blur, gradients, or ambient orbs */
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .app-shell-bg::before {
     display: none;
   }
-  :is(.aurora-light, .aurora-dark)
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark)
     :is(.glass-panel, .app-glass-card, .surface-card, .nexus-app-shell .surface-card) {
     background: var(--surface-card);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    box-shadow: none;
+    box-shadow: var(--elev-1, none);
   }
-  :is(.aurora-light, .aurora-dark) :is(.glass-panel, .app-glass-card)::before {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) :is(.glass-panel, .app-glass-card)::before {
     display: none;
   }
-  :is(.aurora-light, .aurora-dark) .app-sidebar {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .app-sidebar {
     background: var(--app-sidebar-bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
   }
-  :is(.aurora-light, .aurora-dark) .app-topbar {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .app-topbar {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  :is(.aurora-light, .aurora-dark) .app-topbar-menu {
-    box-shadow: none;
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .app-topbar-menu {
+    box-shadow: var(--elev-1, none);
   }
-  :is(.aurora-light, .aurora-dark) :is(.hairline-b, .hairline-t) {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) :is(.hairline-b, .hairline-t) {
     border-color: var(--border-subtle);
   }
-  :is(.aurora-light, .aurora-dark) .glass-pill,
-  :is(.aurora-light, .aurora-dark) .glass-skeleton,
-  :is(.aurora-light, .aurora-dark) .glass-input {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .glass-pill,
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .glass-skeleton,
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .glass-input {
     background: var(--glass-bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  :is(.aurora-light, .aurora-dark) .glass-skeleton {
+  :is(.aurora-light, .aurora-dark, .swiss-light, .swiss-dark) .glass-skeleton {
     background: var(--surface-muted);
   }
 
@@ -1073,6 +1274,126 @@
     color: var(--apple-accent);
   }
 
+  /* ---------------------------------------------------------------
+     Landing page utilities. Light-only by design — no dark variants.
+     One elevation scale for the whole page; depth never comes from blur.
+     --------------------------------------------------------------- */
+  /* Slightly tighter than .apple-hero-headline so the hero's product
+     animation still peeks above the fold on a 900px viewport. */
+  .landing-hero-headline {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+      var(--font-inter), Inter, sans-serif;
+    font-size: clamp(2.35rem, 4.7vw, 4.05rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+  }
+
+  .landing-section-headline {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+      var(--font-inter), Inter, sans-serif;
+    font-size: clamp(1.85rem, 3.2vw, 2.9rem);
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    line-height: 1.1;
+  }
+
+  .landing-elev-1 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .landing-elev-2 {
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.1);
+  }
+  .landing-elev-3 {
+    box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.14);
+  }
+
+  /* Underline that sweeps in from the left and retreats to the right. */
+  .landing-link {
+    position: relative;
+  }
+  .landing-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-link:hover::after,
+  .landing-link:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Marquee: the track holds two identical halves, so -50% loops seamlessly. */
+  @keyframes landing-marquee {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+  @keyframes landing-marquee-reverse {
+    from {
+      transform: translate3d(-50%, 0, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  .landing-marquee-track {
+    animation: landing-marquee var(--marquee-duration, 46s) linear infinite;
+    will-change: transform;
+  }
+  .landing-marquee-track[data-direction="reverse"] {
+    animation-name: landing-marquee-reverse;
+  }
+  .landing-marquee:hover .landing-marquee-track,
+  .landing-marquee:focus-within .landing-marquee-track {
+    animation-play-state: paused;
+  }
+  .landing-marquee-mask {
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-marquee-track {
+      animation: none;
+    }
+    .landing-link::after {
+      transition: none;
+    }
+  }
+
+  /* Nav links stay on one row and scroll horizontally on narrow screens,
+     without a visible scrollbar cutting through the chrome bar. */
+  .nexus-nav-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .nexus-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
   .apple-chrome-bar {
     background-color: color-mix(in srgb, var(--apple-bg) 78%, transparent);
     border-bottom: 1px solid var(--apple-hairline);
@@ -1094,6 +1415,34 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), Inter, sans-serif;
   }
 
+  /* Auth + marketing forms on the light shell — hairline fields, no glass. */
+  .landing-full-bleed .landing-input {
+    height: 2.75rem;
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--apple-hairline);
+    background: #ffffff;
+    padding: 0 0.75rem;
+    font-size: 15px;
+    color: #1d1d1f;
+    outline: none;
+    transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .landing-full-bleed .landing-input::placeholder {
+    color: #86868b;
+  }
+  .landing-full-bleed .landing-input:focus {
+    border-color: var(--nexus-approval);
+    box-shadow: 0 0 0 3px var(--nexus-approval-soft);
+  }
+  .landing-full-bleed .landing-card {
+    border: 1px solid var(--apple-hairline);
+    border-radius: 1.25rem;
+    background: #ffffff;
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.1);
+  }
+
   .landing-full-bleed {
     --apple-text: #1d1d1f;
     --apple-text-secondary: #6e6e73;
@@ -1104,7 +1453,6 @@
     color: var(--apple-text);
   }
 
-  .dark .landing-full-bleed,
   .dark .marketing-apple-shell {
     --apple-text: #ffffff;
     --apple-text-secondary: #d1d5db;
@@ -1120,6 +1468,42 @@
     --atmospheric-grey: #ffffff;
     --text-primary: #ffffff;
     --text-secondary: #d1d5db;
+  }
+
+  /* The landing page is light-only by design.
+     AppShell puts BOTH .marketing-apple-shell and .landing-full-bleed on the
+     same element for "/", so this needs equal specificity (0,2,0) to the rule
+     above AND to come after it in source order. Do not reorder these two.
+     Any dark-class theme (Command / Aurora / Swiss Night) must re-pin light. */
+  :is(.dark, .aurora-dark, .swiss-dark) .landing-full-bleed {
+    --apple-text: #1d1d1f;
+    --apple-text-secondary: #6e6e73;
+    --apple-bg: #ffffff;
+    --apple-bg-alt: #f5f5f7;
+    --apple-hairline: rgba(0, 0, 0, 0.1);
+    --surface-page: #ffffff;
+    --surface-card: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-muted: #f5f5f7;
+    --border-subtle: rgba(0, 0, 0, 0.1);
+    --foreground: #1d1d1f;
+    --atmospheric-grey: #1d1d1f;
+    --text-primary: #1d1d1f;
+    --text-secondary: #6e6e73;
+    /* Dark themes set these to literal white values, so they must be restated —
+       unlike --app-chrome-bg, they are not derived from --surface-*. */
+    --app-chrome-bg: rgba(255, 255, 255, 0.78);
+    --app-chrome-border: rgba(0, 0, 0, 0.1);
+    color-scheme: light;
+  }
+
+  /* Dark themes recolour the wordmark directly, not through a token. */
+  :is(.dark, .aurora-dark, .swiss-dark) .landing-full-bleed .logo-nexus {
+    color: var(--text-primary);
+  }
+  :is(.dark, .aurora-dark, .swiss-dark) .landing-full-bleed .logo-os {
+    color: var(--ref-cta);
+    letter-spacing: 0;
   }
 
   .marketing-apple-shell:not(.landing-full-bleed) {
@@ -1316,38 +1700,9 @@
     border-radius: 8px;
   }
 
-  .ambient-glow {
-    animation: ambient-drift 18s ease-in-out infinite alternate;
-  }
-
-  .ambient-grain {
-    animation: ambient-grain 24s linear infinite;
-  }
-
-  @keyframes ambient-drift {
-    0% {
-      transform: translate(-50%, -50%) scale(1);
-    }
-    100% {
-      transform: translate(-48%, -52%) scale(1.06);
-    }
-  }
-
-  @keyframes ambient-grain {
-    0% {
-      transform: translate(0, 0);
-    }
-    100% {
-      transform: translate(-12px, 8px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .ambient-glow,
-    .ambient-grain {
-      animation: none;
-    }
-  }
+  /* The .ambient-glow / .ambient-grain orb-and-noise backdrop was removed with
+     the old hero — the rebuilt landing page gets its depth from hairlines and
+     one elevation scale, not from drifting gradients. */
 }
 
 /* Atmospheric Executive — workspace onboarding (/onboarding) */

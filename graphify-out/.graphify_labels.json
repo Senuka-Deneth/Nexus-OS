@@ -197,7 +197,7 @@
   "195": "20260714210000_business_profiles_settings_fields.sql",
   "196": "route.ts",
   "197": "rate_limit_durable.test.ts",
-  "198": "StepDone.tsx",
+  "198": "page.tsx",
   "199": "Manual actions — what the founder/operator must do by hand",
   "200": "match_embeddings_route.test.ts",
   "201": "chat_prompt_injection.test.ts",
@@ -242,5 +242,6 @@
   "240": "20260717131000_n8n_job_token_rpcs.sql",
   "241": "openai_smoke.test.ts",
   "242": "20260718120000_generic_mailbox_credentials.sql",
-  "243": "outbound-jobs.ts"
+  "243": "layout.tsx",
+  "245": "ai.ts"
 }
