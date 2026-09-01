@@ -105,3 +105,16 @@ Applied to hosted `xuvodbcdmfhlbldbvwvt` via **Supabase MCP** `apply_migration` 
 | `20260901120000_audit_events.sql` | `20260901070541` / `audit_events` |
 
 Verified: `public.audit_events` exists, RLS enabled, 2 policies (select + insert).
+
+## 7. Wave 1 A2 — People schema (2026-09-01)
+
+Applied to hosted `xuvodbcdmfhlbldbvwvt` via **Supabase MCP** `apply_migration` (project was
+already `ACTIVE_HEALTHY`). First apply attempt failed because unquoted `current_role` is a
+Postgres reserved word; local SQL quotes `"current_role"`. Re-applied successfully.
+
+| Local file | Remote `schema_migrations` |
+|---|---|
+| `20260901130000_people_schema.sql` | `20260901072620` / `people_schema` |
+
+Verified: `employees`, `jobs`, `candidates`, `candidate_jobs` exist; RLS enabled; 4 policies
+each (select/insert/update/delete).

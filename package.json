@@ -46,6 +46,7 @@
     "seed:demo": "tsx scripts/seed_demo_inbox.ts",
     "test:launch-workspace": "node scripts/launch_workspace_rpc.test.mjs",
     "test:audit": "tsx scripts/audit.test.ts",
+    "test:people-schema": "tsx scripts/people_schema.test.ts",
     "test:migration-order": "node scripts/migration_order.test.mjs",
     "test:n8n-job-tokens": "tsx scripts/n8n_job_tokens.test.ts",
     "test:ai-provider": "tsx scripts/ai_provider.test.ts",

@@ -37,8 +37,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **A1** Append-only audit log (`audit_events` + `lib/audit.ts` + RLS tests). Depends: none. — 2026-09-01 — `supabase/migrations/20260901120000_audit_events.sql`, `lib/audit.ts`, `scripts/audit.test.ts`
   Done: 2026-09-01 — `supabase/migrations/20260901120000_audit_events.sql`, `lib/audit.ts`, `scripts/audit.test.ts`
 
-- [ ] **A2** People schema + RLS (`employees`, `jobs`, `candidates`, `candidate_jobs`). Depends: none (can run same day as A1, not in the same conversation).  
-  Done:
+- [x] **A2** People schema + RLS (`employees`, `jobs`, `candidates`, `candidate_jobs`). Depends: none (can run same day as A1, not in the same conversation). — 2026-09-01 — `supabase/migrations/20260901130000_people_schema.sql`, `scripts/people_schema.test.ts`
+  Done: 2026-09-01 — `supabase/migrations/20260901130000_people_schema.sql`, `scripts/people_schema.test.ts`
 
 - [ ] **B1** Employee service + API. Depends: A1, A2.  
   Done:
@@ -109,7 +109,7 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); A2+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); B1+ pending
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory)
 
 ---
