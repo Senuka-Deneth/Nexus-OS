@@ -94,3 +94,14 @@ migrations above replace the safe subset of what `0004` would have added.
   → 20260717120000 (teams ↔ org bridge)
   → 20260717130000 (durability + tokens)
 ```
+
+## 6. Wave 1 A1 — `audit_events` (2026-09-01)
+
+Applied to hosted `xuvodbcdmfhlbldbvwvt` via **Supabase MCP** `apply_migration` (project was
+`INACTIVE`; restored with `restore_project` first, then applied when `ACTIVE_HEALTHY`).
+
+| Local file | Remote `schema_migrations` |
+|---|---|
+| `20260901120000_audit_events.sql` | `20260901070541` / `audit_events` |
+
+Verified: `public.audit_events` exists, RLS enabled, 2 policies (select + insert).

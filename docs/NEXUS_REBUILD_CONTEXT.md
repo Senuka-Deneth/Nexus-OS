@@ -113,10 +113,9 @@ Built:
    kill-switched behind `META_SEND_ENABLED` (unset by default) pending Meta App Review. Not a bug.
 
 ### Deferred (do not start yet)
-Hiring / People Intelligence — specified, not yet built. Canonical plan:
-`docs/NEXUS_OPERATING_LAYER_PLAN.md`. Do not start People work except as a numbered partition
-in that plan. (Social publishing studio and AI image generation, previously listed here, shipped —
-see "Done" above.)
+Hiring / People Intelligence — specified, not yet built. Canonical plan + **Build checklist**:
+`docs/NEXUS_OPERATING_LAYER_PLAN.md`. Implement one numbered partition per conversation. After
+verify, tick that partition `[x]` in the checklist. Do not start Wave 2 until Wave 1 is complete.
 
 ---
 
@@ -146,8 +145,8 @@ UI and pricing are owned by other members; this track is backend/functions.
 6. **Meta outbound** (approval-gated, messaging-window rules) — code complete, kill-switched on
    `META_SEND_ENABLED` pending Meta App Review.
 7. ~~Media studio / image gen~~ — **done** (social publishing studio, shipped 2026-07-09→15).
-8. **People Intelligence** — specified in `docs/NEXUS_OPERATING_LAYER_PLAN.md`; implement only as
-   numbered partitions from that plan (not an ATS bolt-on).
+8. **People Intelligence** — `docs/NEXUS_OPERATING_LAYER_PLAN.md` Build checklist. One partition
+   per conversation; tick `[x]` when verified. Wave 2 is forbidden until W1 is ticked.
 9. Production-reliability hardening (durable queues, per-tenant
    `N8N_INGEST_TOKEN` scoping, replay tooling) is ongoing — see
    `docs/security_audit_and_review_2026-07-15.md` blocker #7.

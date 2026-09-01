@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Nexus OS — Engineering Rules
 
-Read this first every session. For build state, read `docs/NEXUS_REBUILD_CONTEXT.md`. For People / operating-layer work, read `docs/NEXUS_OPERATING_LAYER_PLAN.md` and implement **one partition per conversation**.
+Read this first every session. For build state, read `docs/NEXUS_REBUILD_CONTEXT.md`. For People / operating-layer work, read `docs/NEXUS_OPERATING_LAYER_PLAN.md`, implement **one partition per conversation**, and tick that partition in the **Build checklist** at the top of that file when verify passes.
 
 Do not start coding until you know which of those docs applies. If something you need is not documented, STOP and ask rather than inventing it.
 
@@ -60,17 +60,40 @@ This repo is iCloud-synced and may contain conflicted copies named `* 2.ext`.
 
 ## Graphify
 
-This project has a knowledge graph at `graphify-out/`.
+Knowledge graph at `graphify-out/`. Setup: `docs/GRAPHIFY.md`.
 
-Before exploring with Read/Grep/Glob/Bash, prefer:
+**Agents must use the wrapper** (works when `graphify` is not on PATH):
 
-- `graphify query "<question>"`
-- `graphify path "<A>" "<B>"`
-- `graphify explain "<concept>"`
+```bash
+./scripts/graphify.sh query "<question>"
+./scripts/graphify.sh path "<A>" "<B>"
+./scripts/graphify.sh explain "<concept>"
+./scripts/graphify.sh update .
+```
 
-Include this in subagent prompts that explore code. If the `graphify` CLI is not installed, use `graphify-out/GRAPH_REPORT.md` / `graphify-out/wiki/` if present, then Read/Grep. If `graphify-out/graph.json` does not exist, skip to Read/Grep.
+Before Read/Grep/Glob/Bash exploration, run a graphify query when `graphify-out/graph.json` exists. Include this in subagent prompts.
 
-After modifying **code** files, run `graphify update .` when the CLI exists (AST-only).
+Fallback if no graph: `graphify-out/GRAPH_REPORT.md`, then Read/Grep. Bootstrap: `./scripts/ensure-graphify.sh`.
+
+After modifying **code** files, run `./scripts/graphify.sh update .` (AST-only, no API cost).
+
+## Hosted Supabase (migrations)
+
+**Canonical project:** `NexusOs` — ref `xuvodbcdmfhlbldbvwvt` (see `supabase/migrations/MIGRATION_NOTES.md`).
+
+**Apply new migrations to hosted Postgres with the Supabase MCP** (`plugin-supabase-supabase`), not raw `execute_sql` for DDL:
+
+1. `list_projects` → confirm project ref `xuvodbcdmfhlbldbvwvt`.
+2. If status is `INACTIVE`, call `restore_project` and wait until `get_project` reports `ACTIVE_HEALTHY`.
+3. `list_migrations` → confirm the local file is not already applied.
+4. `apply_migration` with `project_id`, `name` (snake_case, e.g. `audit_events`), and the full SQL from `supabase/migrations/<file>.sql`.
+5. Verify: `list_tables` or `execute_sql` on `pg_policies` — table exists with RLS.
+
+Local repo files remain the source of truth; MCP records its own version timestamp in `supabase_migrations.schema_migrations` (may differ from the local filename prefix — that is OK).
+
+**Do not use the Supabase CLI in this iCloud-synced repo** unless a human explicitly asks: `npx supabase` / the bundled binary may SIGKILL on this path. Prefer MCP for remote apply; use CLI only for local `supabase start` when a human has linked the project.
+
+After a partition adds SQL, note in **NEEDS HUMAN** only until that migration is verified on hosted via MCP.
 
 ## Conventions
 
@@ -139,6 +162,9 @@ New logic needs tests (normalizer, tenant resolution, scoring, CSV, RLS, signatu
 - lint: pass/fail
 - build: pass/fail
 - tests run + results
+
+## CHECKLIST
+- ticked partition <ID> in docs/NEXUS_OPERATING_LAYER_PLAN.md Build checklist: yes/no
 
 ## NEEDS HUMAN
 - env vars, Supabase migration apply, n8n import, or decisions

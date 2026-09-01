@@ -8,14 +8,118 @@ Do not open a second “HR architecture” document. `docs/full_new_implementati
 
 ---
 
+## Locked scope (do not ask)
+
+This plan covers **Wave 1 People Intelligence only**.
+
+| In scope | Out of scope |
+|----------|----------------|
+| Employees, jobs, candidates, CSV, deterministic matching, 4-stage pipeline, People email draft/send, read-only Chat snapshot | GitHub discovery, Nexus Router, five domain agents, Trigger.dev, leave/payroll/performance, CV PDF parse, OpenRouter, `organization_id` as People tenant, a second approval inbox, rewriting Revenue/Chat/n8n/Social |
+
+Start at **A1**. One Cursor conversation = one partition. Do not implement Wave 2 (G2–L1) until every Wave 1 box below is `[x]`.
+
+When a partition’s verify commands pass, the implementing agent **must** tick that row in this file (`[ ]` → `[x]`), fill **Done** (date + files), and save. Unticked = not done. Do not mark done if lint, build, or the partition tests failed.
+
+---
+
+## Build checklist
+
+Copy the **next unticked** partition prompt from §12. Tick here only after verification.
+
+### Wave 0 — already complete
+
+- [x] **P0** Repository recon recorded in this file (tenant = `teams`/`workspaces`; AI = OpenAI via `lib/ai/*`; Chat = read-only). No extra recon conversation.
+
+### Wave 1 — build in this order
+
+Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
+
+- [x] **A1** Append-only audit log (`audit_events` + `lib/audit.ts` + RLS tests). Depends: none. — 2026-09-01 — `supabase/migrations/20260901120000_audit_events.sql`, `lib/audit.ts`, `scripts/audit.test.ts`
+  Done: 2026-09-01 — `supabase/migrations/20260901120000_audit_events.sql`, `lib/audit.ts`, `scripts/audit.test.ts`
+
+- [ ] **A2** People schema + RLS (`employees`, `jobs`, `candidates`, `candidate_jobs`). Depends: none (can run same day as A1, not in the same conversation).  
+  Done:
+
+- [ ] **B1** Employee service + API. Depends: A1, A2.  
+  Done:
+
+- [ ] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1.  
+  Done:
+
+- [ ] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none.  
+  Done:
+
+- [ ] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3.  
+  Done:
+
+- [ ] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2.  
+  Done:
+
+- [ ] **C2** Candidate CRUD API + UI (no scores). Depends: A2.  
+  Done:
+
+- [ ] **C3** Candidate CSV import onto a selected job (stage `new`, no scores). Depends: B3, B4, C1, C2.  
+  Done:
+
+- [ ] **D2** Deterministic scoring engine (pure, no LLM, no DB). Depends: none. May run in parallel with D1.  
+  Done:
+
+- [ ] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3.  
+  Done:
+
+- [ ] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2.  
+  Done:
+
+- [ ] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3.  
+  Done:
+
+- [ ] **D5** Candidate ranking UI (advisory; manual override). Depends: D4.  
+  Done:
+
+- [ ] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5.  
+  Done:
+
+- [ ] **F1** Generic email draft service (never sends). Depends: none.  
+  Done:
+
+- [ ] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2.  
+  Done:
+
+- [ ] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2.  
+  Done:
+
+- [ ] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2.  
+  Done:
+
+### Wave 1 complete
+
+- [ ] **W1** All Wave 1 boxes above are `[x]`. Founder can: roster + CSV, job + ranked candidates, four stages, explicit email send, Chat answers from People snapshot without mutating. Run `npm run test:gate`.  
+  Done:
+
+### Wave 2 — do not start until W1 is ticked
+
+- [ ] **G2** People read tools in Chat (only if G1 Q&A is insufficient)
+- [ ] **G3** Confirmation-gated People tools
+- [ ] **H1** CandidateSource adapter (interface only)
+- [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
+- [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
+- [ ] **J1** Embed People summaries only when a feature reads that `kind`
+- [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)
+- [ ] **L1** Production hardening audit
+
+### Human (not agent)
+
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); A2+ pending
+- [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory)
+
+---
+
 ## How to use this file
 
-1. One Cursor conversation implements **one partition** (A1, B1, …).
-2. Paste the **Shared agent contract**, then that partition’s prompt. Do not paste two partitions.
-3. The agent must inspect current code, reuse it, and refuse scope creep.
-4. Check the partition off in the tracker when verification passes.
-
-This is not a license to rewrite Revenue, Chat, n8n, or Social.
+1. Open the **Build checklist**. Implement the first `- [ ]` Wave 1 row whose **Depends** are already `[x]`.
+2. Paste the **Shared agent contract**, then that partition’s prompt in §12. Never two partitions.
+3. Inspect current code, reuse it, refuse scope creep. Do not rewrite Revenue, Chat, n8n, or Social.
+4. After verify passes: set that row to `- [x]`, fill **Done:** with date and key paths, save this file.
 
 ---
 
@@ -148,7 +252,7 @@ Do not spend a conversation re-deriving this. Re-inspect files you will *edit*; 
 2. Chat is read-only by construction — do not add tools in early partitions.
 3. n8n production URL vs missing internal routes on some branches — out of scope.
 4. `trigger.config.ts` orphan — do not build on it.
-5. Graphify CLI may be missing locally; `graphify-out/` still exists.
+5. Graphify: use `./scripts/graphify.sh` — see `docs/GRAPHIFY.md`.
 
 ---
 
@@ -316,29 +420,7 @@ A founder cannot:
 
 ## 10. Partition tracker
 
-| ID | Name | Depends | Status |
-|----|------|---------|--------|
-| A1 | Append-only audit log | — | pending |
-| A2 | People schema + RLS | — | pending |
-| B1 | Employee service + API | A2, A1 | pending |
-| B2 | Employee UI + `/people` nav | B1 | pending |
-| B3 | Shared CSV parser (pure) | — | pending |
-| B4 | Employee CSV import/export | B2, B3 | pending |
-| C1 | Jobs API + create/edit UI | A2 | pending |
-| C2 | Candidate CRUD API + UI | A2 | pending |
-| C3 | Candidate CSV into a job | B3, B4, C1, C2 | pending |
-| D1 | `background_jobs` + match worker skeleton | C3 | pending |
-| D2 | Deterministic scoring engine | — | pending |
-| D3 | Wire scoring into worker | D1, D2 | pending |
-| D4 | AI explanation layer | D3 | pending |
-| D5 | Ranking UI | D4 | pending |
-| D6 | Four-stage pipeline | D5 | pending |
-| F1 | Generic email draft service | — | pending |
-| F2 | Composer + explicit send | F1, A1, C2 or B1 | pending |
-| F3 | Post-send follow-up confirmation | F2 | pending |
-| G1 | Read-only People snapshot in Chat | B1, C1, C2 | pending |
-
-Suggested conversation order: **A1 → A2 → B1 → B2 → B3 → B4 → C1 → C2 → C3 → D2 (can overlap D1) → D1 → D3 → D4 → D5 → D6 → F1 → F2 → F3 → G1**.
+Status lives only in the **Build checklist** at the top of this file. Do not duplicate a pending/done table here.
 
 ---
 
@@ -367,6 +449,7 @@ Hard rules:
 12. Run the partition’s verify commands. Do not claim done if they fail.
 13. End with the report-back block from .cursor/rules/nexus.mdc.
 14. Never silently redesign unrelated features or global navigation (B2 may add ONE People item only).
+15. When verify passes, tick this partition in the Build checklist at the top of this file (`[ ]` → `[x]`), fill Done with date and key files, and save. Do not tick if tests failed.
 ```
 
 ---
@@ -608,7 +691,19 @@ Candidate CSV ingestion + associate with selected job. Partial failures. Duplica
 
 ### D1 — background_jobs + match worker skeleton
 
-**Goal:** Persist jobs; run endpoint processes N `candidate_jobs` with `data_quality=pending` and **marks them running/completed without scoring** (no-op processor OR sets a `skipped_reason=not_implemented` only if that would confuse UI — better: processor is a stub that exits 0 rows until D3). Prefer: worker loop + progress + retry **with a `processKind` switch**; `people.match` case returns `not_implemented` only in tests… **Simplest:** implement state machine + `runNextBatch` that selects rows and calls `applyMatchToCandidateJob` from a module D3 will fill. In D1 export a stub `applyMatchToCandidateJob` that throws `not_implemented` **or** no-op. Cleaner: D1 only table + `claimJob` / `failJob` / `completeJob` helpers + HTTP run route that no-ops if kind has no handler.
+**Goal:** Persistent `background_jobs` + claim/run HTTP endpoint. No scoring.
+
+**In scope:**
+
+- Table: `id`, `team_id`, `workspace_id`, `kind` (text; first value `people.match`), `status` (`queued|running|completed|failed|cancelled`), `payload jsonb`, `progress jsonb`, `error`, `idempotency_key`, `attempts`, `run_after`, `locked_at`, `locked_by`, timestamps.
+- Unique `(team_id, idempotency_key)` where key is not null.
+- RLS like other People tables. Service/authenticated insert scoped to current team.
+- `lib/people/jobs.ts`: `enqueue`, `claim`, `complete`, `fail`, `cancel`.
+- `POST /api/internal/people/jobs/run` (ingest token, same pattern as n8n internal routes): claim up to N queued rows, dispatch by `kind`.
+- For `people.match` in D1: complete the job with `progress: { processed: 0, note: "handler wired in D3" }` and do **not** write scores. D3 replaces this handler.
+- Cron later POSTs this route (human: n8n schedule or Vercel cron). Document that in a comment on the route.
+
+**Out of scope:** Trigger.dev, scoring math, LLM, Gmail backfill changes.
 
 **Reuse:** `gmail_backfill_jobs` status/lock ideas. Do not modify Gmail jobs.
 
@@ -834,23 +929,25 @@ Add npm scripts for each new `scripts/*.test.ts` and append **fast** ones to `te
 
 ## 15. Human actions (not agent)
 
-- Apply new migrations on the hosted Supabase project.
-- Create storage bucket if B4 uses one (`people-imports`, private, tenant-prefixed paths).
-- Decide later: n8n cron vs Vercel cron for `background_jobs` run.
-- Do not enable GitHub discovery without a consent/legal review.
+Tick these in the **Build checklist** Human section when done.
+
+- Apply Wave 1 migrations on hosted Supabase.
+- Private `people-imports` bucket only if B4 stores files (B4 default is in-memory + 1 MB cap).
+- After D1: cron that POSTs the People job-run endpoint. Prefer an existing n8n schedule or Vercel cron; do not add Trigger.dev.
+- GitHub / public discovery stays Wave 2 (H2) and needs a consent review before any code.
 
 ---
 
-## 16. Open questions (do not block Wave 1)
+## 16. Locked decisions (do not re-ask)
 
-1. Who may see salary fields if they are added later? (Do not add salary in A2.)
-2. Multi-workspace teams: APIs today pick the **first** workspace (`requireApiTenantContext`). People inherits that; do not invent workspace switchers in B2.
-3. Whether People emails use the connected Gmail vs SMTP mailbox — F2 must inspect which transport the tenant actually has.
+1. **Salary:** do not add salary columns in Wave 1 (A2 or later Wave 1 partitions).
+2. **Workspace:** People uses the workspace `requireApiTenantContext()` already returns (first workspace). No workspace switcher in B2.
+3. **People email transport (F2):** use connected Gmail send if the tenant has it; otherwise the generic SMTP mailbox. Inspect existing send helpers; do not invent a third transport.
+4. **Background jobs:** Postgres `background_jobs` table (D1), modeled on `gmail_backfill_jobs`. Not Trigger.dev.
+5. **CSV:** one shared parser (B3). Employee import in B4; candidate import in C3. Not a generic ETL platform.
 
 ---
 
 ## DONE criteria for the *plan* work (this document)
 
-- Incoming 12-phase mega-build is replaced by Wave 1 partitions above.
-- Repo truth recorded so agents do not follow README fiction (`organizations` / OpenRouter as primary).
-- Rules live in one file: `.cursor/rules/nexus.mdc`.
+- Wave 1 scope is locked in the Build checklist. Agents tick boxes there; they do not invent a second plan.
