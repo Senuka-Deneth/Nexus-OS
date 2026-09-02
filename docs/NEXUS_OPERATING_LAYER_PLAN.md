@@ -98,7 +98,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 ### Wave 2 — do not start until W1 is ticked
 
-- [ ] **G2** People read tools in Chat (only if G1 Q&A is insufficient)
+- [x] **G2** People read tools in Chat (only if G1 Q&A is insufficient). Depends: G1. — 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `app/api/chat/route.ts`
+  Done: 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_people_tools.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [ ] **G3** Confirmation-gated People tools
 - [ ] **H1** CandidateSource adapter (interface only)
 - [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
@@ -894,6 +895,24 @@ Add a tenant-scoped People section to the existing Revenue Analyst snapshot. Kee
 Reuse lib/chat/analyst-context.ts and tests in scripts/chat_analyst.test.ts + scripts/chat_prompt_injection.test.ts (extend injection tests so a user cannot jailbreak “update the employee”).
 
 If People tables are empty, say so. Do not fabricate employees.
+```
+
+---
+
+### G2 — People read tools in Chat
+
+**Goal:** When the G1 snapshot cannot answer a named roster or pipeline question, Chat may call three **read-only** People tools. Still no mutations, no router, no send.
+
+**Prompt:**
+
+```text
+Implement partition G2 only.
+
+Add a closed allowlist of read-only People tools to the existing Revenue Analyst chat: search_employees, search_candidates, list_job_pipeline. Wrap lib/people list helpers. Project names/roles/stages/scores only — never email, phone, notes, or URLs. Cap queries at 80 characters and results at 8 rows. At most two tool rounds, then stream the final answer. Mock mode skips the loop.
+
+User/knowledge text cannot add tools. Unknown names return an error JSON. Do not import update/create/send helpers. Extend scripts/chat_prompt_injection.test.ts and add scripts/chat_people_tools.test.ts.
+
+No G3 confirmation-gated writes. No mini-router. No n8n. No migration.
 ```
 
 ---

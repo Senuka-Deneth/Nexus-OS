@@ -1,6 +1,11 @@
 import "server-only";
 
 import { AI_MODELS, AiNotConfiguredError, getOpenAiClient, isMockMode } from "@/lib/ai/provider";
+import {
+  executePeopleReadTool,
+  PEOPLE_READ_TOOLS,
+} from "@/lib/chat/people-tools";
+import type { PeopleTenantContext } from "@/lib/people/employees";
 
 /**
  * Server-only chat wrapper for the Revenue Analyst. Thin wrapper over `lib/ai/provider` — the
@@ -11,16 +16,101 @@ import { AI_MODELS, AiNotConfiguredError, getOpenAiClient, isMockMode } from "@/
 
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 
+const MAX_PEOPLE_TOOL_ROUNDS = 2;
+
+type OpenAiToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+};
+
+type ToolCallAcc = { id: string; name: string; args: string };
+
+type LoopMessage =
+  | { role: "system"; content: string }
+  | ChatTurn
+  | { role: "assistant"; content: string | null; tool_calls: OpenAiToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
+
 function resolveModel(): string {
   return process.env.OPENAI_MODEL?.trim() || AI_MODELS.CHAT;
 }
 
+function ingestToolDelta(
+  acc: Map<number, ToolCallAcc>,
+  parts: Array<{
+    index?: number;
+    id?: string;
+    function?: { name?: string; arguments?: string };
+  }>,
+): void {
+  for (const part of parts) {
+    const index = typeof part.index === "number" ? part.index : 0;
+    const cur = acc.get(index) ?? { id: "", name: "", args: "" };
+    if (part.id) cur.id = part.id;
+    if (part.function?.name) cur.name += part.function.name;
+    if (part.function?.arguments) cur.args += part.function.arguments;
+    acc.set(index, cur);
+  }
+}
+
+function finalizedToolCalls(acc: Map<number, ToolCallAcc>): OpenAiToolCall[] {
+  return [...acc.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, call]) => ({
+      id: call.id,
+      type: "function" as const,
+      function: { name: call.name, arguments: call.args },
+    }))
+    .filter((call) => call.id.length > 0 && call.function.name.length > 0);
+}
+
+type StreamDelta = {
+  content?: string | null;
+  tool_calls?: Array<{
+    index?: number;
+    id?: string;
+    function?: { name?: string; arguments?: string };
+  }>;
+};
+
+type StreamChunk = {
+  choices?: Array<{ delta?: StreamDelta }>;
+};
+
+async function* streamChunks(
+  stream: AsyncIterable<StreamChunk>,
+  withTools: boolean,
+): AsyncGenerator<string, OpenAiToolCall[]> {
+  const acc = new Map<number, ToolCallAcc>();
+  let sawTools = false;
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices?.[0]?.delta;
+    if (!delta) continue;
+    if (withTools && delta.tool_calls && delta.tool_calls.length > 0) {
+      sawTools = true;
+      ingestToolDelta(acc, delta.tool_calls);
+      continue;
+    }
+    if (delta.content && !sawTools) {
+      yield delta.content;
+    }
+  }
+
+  if (!sawTools) return [];
+  return finalizedToolCalls(acc);
+}
+
 /**
  * Stream the analyst reply as text deltas. Yields nothing but the assistant's content chunks.
+ * When `peopleTools` is set (and not mock mode), runs up to two read-only People tool rounds
+ * before streaming the final answer. First-token latency grows only when the model calls tools.
  */
 export async function* streamAnalystReply(params: {
   system: string;
   history: ChatTurn[];
+  peopleTools?: PeopleTenantContext;
 }): AsyncGenerator<string, void, unknown> {
   if (isMockMode()) {
     yield "This is a mock analyst reply used for CI/tests.";
@@ -30,18 +120,51 @@ export async function* streamAnalystReply(params: {
   const client = getOpenAiClient();
   if (!client) throw new AiNotConfiguredError();
   const model = resolveModel();
+  const messages: LoopMessage[] = [
+    { role: "system", content: params.system },
+    ...params.history,
+  ];
 
-  const stream = await client.chat.completions.create({
+  if (params.peopleTools) {
+    const peopleTools = params.peopleTools;
+    for (let round = 0; round < MAX_PEOPLE_TOOL_ROUNDS; round += 1) {
+      const stream = await client.chat.completions.create({
+        model,
+        temperature: 0.3,
+        stream: true,
+        tools: PEOPLE_READ_TOOLS,
+        messages: messages as never,
+      });
+      const toolCalls = yield* streamChunks(stream, true);
+      if (toolCalls.length === 0) return;
+
+      messages.push({
+        role: "assistant",
+        content: null,
+        tool_calls: toolCalls,
+      });
+      for (const call of toolCalls) {
+        const content = await executePeopleReadTool(
+          call.function.name,
+          call.function.arguments,
+          peopleTools,
+        );
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content,
+        });
+      }
+    }
+  }
+
+  const finalStream = await client.chat.completions.create({
     model,
     temperature: 0.3,
     stream: true,
-    messages: [{ role: "system", content: params.system }, ...params.history],
+    messages: messages as never,
   });
-
-  for await (const chunk of stream) {
-    const delta = chunk.choices?.[0]?.delta?.content;
-    if (delta) yield delta;
-  }
+  yield* streamChunks(finalStream, false);
 }
 
 /**

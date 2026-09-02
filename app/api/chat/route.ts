@@ -155,7 +155,7 @@ export async function POST(request: Request) {
 
   const tenant = await requireApiTenantContext();
   if (!tenant.ok) return tenant.response;
-  const { supabase, teamId, workspaceId } = tenant;
+  const { supabase, teamId, workspaceId, user } = tenant;
 
   const parsed = await readJsonObjectWithLimit(request, JSON_LIMITS.small);
   if (!parsed.ok) return parsed.response;
@@ -263,7 +263,16 @@ export async function POST(request: Request) {
     async start(controller) {
       let full = "";
       try {
-        for await (const delta of streamAnalystReply({ system: systemPrompt, history })) {
+        for await (const delta of streamAnalystReply({
+          system: systemPrompt,
+          history,
+          peopleTools: {
+            supabase,
+            teamId,
+            workspaceId,
+            user: { id: user.id },
+          },
+        })) {
           full += delta;
           controller.enqueue(encoder.encode(delta));
         }
