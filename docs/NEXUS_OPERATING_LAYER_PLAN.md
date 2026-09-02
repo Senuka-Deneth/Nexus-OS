@@ -46,8 +46,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1. — 2026-09-01 — `app/people/page.tsx`, `components/people/*`, `lib/queries/fetchers.ts`, `components/layout/AppSidebar.tsx`
   Done: 2026-09-01 — `app/people/page.tsx`, `app/people/new/page.tsx`, `app/people/[id]/page.tsx`, `components/people/*`, `lib/queries/keys.ts`, `lib/queries/fetchers.ts`, `lib/queries/nav-prefetch.ts`, `components/layout/AppSidebar.tsx`, `middleware.ts`
 
-- [ ] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none.  
-  Done:
+- [x] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none. — 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `scripts/csv_engine.test.ts`
+  Done: 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `lib/csv/index.ts`, `scripts/csv_engine.test.ts`
 
 - [ ] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3.  
   Done:
