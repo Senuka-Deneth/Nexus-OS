@@ -4,6 +4,8 @@ import {
   conversationsQuery,
   dailyReportQuery,
   EMPLOYEES_PAGE_SIZE,
+  CANDIDATES_PAGE_SIZE,
+  candidatesQuery,
   employeesQuery,
   JOBS_PAGE_SIZE,
   jobsQuery,
@@ -81,6 +83,23 @@ export function prefetchNavRoute(
     void queryClient.prefetchQuery({
       queryKey: queryKeys.jobs(teamId, "", "", false, JOBS_PAGE_SIZE, 0),
       queryFn: () => jobsQuery({ limit: JOBS_PAGE_SIZE, offset: 0 }),
+      staleTime: STALE,
+    });
+    return;
+  }
+
+  if (href === "/people/candidates" || href.startsWith("/people/candidates")) {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.candidates(
+        teamId,
+        "",
+        "",
+        false,
+        CANDIDATES_PAGE_SIZE,
+        0,
+      ),
+      queryFn: () =>
+        candidatesQuery({ limit: CANDIDATES_PAGE_SIZE, offset: 0 }),
       staleTime: STALE,
     });
     return;

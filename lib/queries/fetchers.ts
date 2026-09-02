@@ -7,6 +7,8 @@ import type {
   AiUsageSummary,
   Conversation,
   DailyReport,
+  Candidate,
+  ConsentStatus,
   Employee,
   EmploymentStatus,
   Job,
@@ -532,6 +534,114 @@ export async function updateJobMutation(
   if (!res.ok) throw new Error(errFrom(res, json));
   if (!json.data || typeof json.data !== "object") {
     throw new Error("Invalid job response");
+  }
+  return json.data;
+}
+
+// --- People candidates (founder-owned) ----------------------------------------
+
+export const CANDIDATES_PAGE_SIZE = 50;
+
+export type CandidatesListParams = {
+  q?: string | null;
+  consentStatus?: string | null;
+  includeArchived?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+export type CandidatesListResult = {
+  data: Candidate[];
+  count: number;
+};
+
+export type CandidateWriteBody = {
+  full_name?: string;
+  email?: string | null;
+  phone?: string | null;
+  headline?: string | null;
+  current_role?: string | null;
+  experience_years?: number | null;
+  skills?: string[];
+  location?: string | null;
+  source?: string | null;
+  source_url?: string | null;
+  consent_status?: ConsentStatus;
+  notes?: string | null;
+  archived?: boolean;
+};
+
+export async function candidatesQuery(
+  params: CandidatesListParams = {},
+): Promise<CandidatesListResult> {
+  const search = new URLSearchParams();
+  const q = params.q?.trim();
+  if (q) search.set("q", q.slice(0, 200));
+  if (params.consentStatus) search.set("consent_status", params.consentStatus);
+  if (params.includeArchived) search.set("include_archived", "true");
+  search.set("limit", String(params.limit ?? CANDIDATES_PAGE_SIZE));
+  search.set("offset", String(params.offset ?? 0));
+
+  const res = await authenticatedFetch(
+    `/api/people/candidates?${search.toString()}`,
+  );
+  const json = await readJson<{ data?: Candidate[]; count?: number; error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!Array.isArray(json.data)) {
+    throw new Error("Invalid candidates response");
+  }
+  return {
+    data: json.data,
+    count: typeof json.count === "number" ? json.count : json.data.length,
+  };
+}
+
+export async function candidateQuery(id: string): Promise<Candidate> {
+  const res = await authenticatedFetch(
+    `/api/people/candidates/${encodeURIComponent(id)}`,
+  );
+  const json = await readJson<{ data?: Candidate; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid candidate response");
+  }
+  return json.data;
+}
+
+export async function createCandidateMutation(
+  body: CandidateWriteBody,
+): Promise<Candidate> {
+  const res = await authenticatedFetch("/api/people/candidates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<{ data?: Candidate; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid candidate response");
+  }
+  return json.data;
+}
+
+export async function updateCandidateMutation(
+  id: string,
+  body: CandidateWriteBody,
+): Promise<Candidate> {
+  const res = await authenticatedFetch(
+    `/api/people/candidates/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: Candidate; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid candidate response");
   }
   return json.data;
 }

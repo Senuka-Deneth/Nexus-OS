@@ -287,6 +287,36 @@ export interface Job {
   updated_at: string;
 }
 
+export const CONSENT_STATUSES = [
+  "owner_imported",
+  "candidate_applied",
+  "unknown",
+] as const;
+export type ConsentStatus = (typeof CONSENT_STATUSES)[number];
+
+/** A row from `candidates` (founder-owned). Soft-archive via `archived_at`. */
+export interface Candidate {
+  id: string;
+  team_id: string;
+  workspace_id: string | null;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  headline: string | null;
+  current_role: string | null;
+  experience_years: number | null;
+  skills: string[];
+  location: string | null;
+  source: string | null;
+  source_url: string | null;
+  source_metadata: Record<string, unknown>;
+  consent_status: ConsentStatus;
+  notes: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

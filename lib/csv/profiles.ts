@@ -3,15 +3,14 @@
  * Keep this module free of Next.js / server-only imports so tests stay pure.
  */
 
-import { EMPLOYMENT_STATUSES } from "@/types";
+import {
+  CONSENT_STATUSES,
+  EMPLOYMENT_STATUSES,
+  type ConsentStatus,
+} from "@/types";
 
-export const CONSENT_STATUSES = [
-  "owner_imported",
-  "candidate_applied",
-  "unknown",
-] as const;
-
-export type ConsentStatus = (typeof CONSENT_STATUSES)[number];
+export { CONSENT_STATUSES };
+export type { ConsentStatus };
 
 export type CsvProfileName = "employee" | "candidate";
 
