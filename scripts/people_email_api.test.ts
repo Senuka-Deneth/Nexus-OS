@@ -19,6 +19,12 @@ const EMP_OK = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const EMP_NO_EMAIL = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const CAND_OK = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER_DRAFT = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const JOB_OK = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const JOB_TWO = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const CJ_NEW = "12121212-1212-4121-8121-121212121212";
+const CJ_SHORT = "13131313-1313-4131-8131-131313131313";
+const CJ_DECISION = "14141414-1414-4141-8141-141414141414";
+const CJ_WRONG_CAND = "15151515-1515-4151-8151-151515151515";
 
 type Row = Record<string, unknown>;
 type AuthMode = "ok" | "unauthorized" | "no_tenant";
@@ -30,6 +36,8 @@ const candidatesTable: Row[] = [];
 const draftsTable: Row[] = [];
 const auditEventsTable: Row[] = [];
 const profilesTable: Row[] = [];
+const jobsTable: Row[] = [];
+const candidateJobsTable: Row[] = [];
 const gmailSendCalls: Row[] = [];
 const smtpSendCalls: Row[] = [];
 
@@ -73,10 +81,108 @@ function seedPeople(): void {
     email: "casey@example.com",
     current_role: "Designer",
     headline: "Product designer",
+    consent_status: "unknown",
+    notes: null,
     archived_at: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
   });
+  jobsTable.push(
+    {
+      id: JOB_OK,
+      team_id: TEAM_ID,
+      title: "Product Designer",
+      archived_at: null,
+    },
+    {
+      id: JOB_TWO,
+      team_id: TEAM_ID,
+      title: "Brand Designer",
+      archived_at: null,
+    },
+  );
+  candidateJobsTable.push(
+    {
+      id: CJ_NEW,
+      team_id: TEAM_ID,
+      candidate_id: CAND_OK,
+      job_id: JOB_OK,
+      stage: "new",
+      assigned_to: null,
+      match_score: null,
+      match_components: null,
+      match_weights_used: null,
+      scoring_version: null,
+      data_quality: "pending",
+      insufficient_reason: null,
+      ai_explanation: null,
+      ai_model: null,
+      ai_prompt_version: null,
+      manual_rank_override: null,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    },
+    {
+      id: CJ_SHORT,
+      team_id: TEAM_ID,
+      candidate_id: CAND_OK,
+      job_id: JOB_TWO,
+      stage: "shortlisted",
+      assigned_to: null,
+      match_score: null,
+      match_components: null,
+      match_weights_used: null,
+      scoring_version: null,
+      data_quality: "pending",
+      insufficient_reason: null,
+      ai_explanation: null,
+      ai_model: null,
+      ai_prompt_version: null,
+      manual_rank_override: null,
+      created_at: "2026-01-02T00:00:00Z",
+      updated_at: "2026-01-02T00:00:00Z",
+    },
+    {
+      id: CJ_DECISION,
+      team_id: TEAM_ID,
+      candidate_id: CAND_OK,
+      job_id: JOB_OK,
+      stage: "decision",
+      assigned_to: null,
+      match_score: null,
+      match_components: null,
+      match_weights_used: null,
+      scoring_version: null,
+      data_quality: "pending",
+      insufficient_reason: null,
+      ai_explanation: null,
+      ai_model: null,
+      ai_prompt_version: null,
+      manual_rank_override: null,
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    },
+    {
+      id: CJ_WRONG_CAND,
+      team_id: TEAM_ID,
+      candidate_id: EMP_OK,
+      job_id: JOB_OK,
+      stage: "new",
+      assigned_to: null,
+      match_score: null,
+      match_components: null,
+      match_weights_used: null,
+      scoring_version: null,
+      data_quality: "pending",
+      insufficient_reason: null,
+      ai_explanation: null,
+      ai_model: null,
+      ai_prompt_version: null,
+      manual_rank_override: null,
+      created_at: "2026-01-04T00:00:00Z",
+      updated_at: "2026-01-04T00:00:00Z",
+    },
+  );
   profilesTable.push({
     team_id: TEAM_ID,
     workspace_id: WORKSPACE_ID,
@@ -93,6 +199,8 @@ function resetState(): void {
   draftsTable.length = 0;
   auditEventsTable.length = 0;
   profilesTable.length = 0;
+  jobsTable.length = 0;
+  candidateJobsTable.length = 0;
   gmailSendCalls.length = 0;
   smtpSendCalls.length = 0;
   authMode = "ok";
@@ -115,7 +223,19 @@ function storeFor(table: string): Row[] {
   if (table === "people_message_drafts") return draftsTable;
   if (table === "audit_events") return auditEventsTable;
   if (table === "business_profiles") return profilesTable;
+  if (table === "jobs") return jobsTable;
+  if (table === "candidate_jobs") return candidateJobsTable;
   return [];
+}
+
+function attachCandidates(rows: Row[]): Row[] {
+  return rows
+    .map((row) => {
+      const candidate = candidatesTable.find((c) => c.id === row.candidate_id);
+      if (!candidate || candidate.archived_at) return null;
+      return { ...row, candidates: { ...candidate } };
+    })
+    .filter((row): row is Row => row !== null);
 }
 
 function tenantSupabase() {
@@ -125,8 +245,17 @@ function tenantSupabase() {
       const filters: Array<(r: Row) => boolean> = [];
       let insertRow: Row | null = null;
       let updatePatch: Row | null = null;
+      let isCandidateJobsJoin = false;
 
       const applyFilters = () => store.filter((r) => filters.every((f) => f(r)));
+
+      const hydrate = (row: Row | null): Row | null => {
+        if (!row) return null;
+        if (table === "candidate_jobs" && isCandidateJobsJoin) {
+          return attachCandidates([row])[0] ?? null;
+        }
+        return { ...row };
+      };
 
       const finishInsert = () => {
         if (!insertRow) return { data: null, error: null };
@@ -156,13 +285,19 @@ function tenantSupabase() {
         Object.assign(rows[0], updatePatch, {
           updated_at: new Date().toISOString(),
         });
-        const data = { ...rows[0] };
+        const data = hydrate({ ...rows[0] });
         updatePatch = null;
+        if (!data) {
+          return { data: null, error: { message: "not found" } };
+        }
         return { data, error: null };
       };
 
       const chain = {
-        select() {
+        select(cols?: string) {
+          if (table === "candidate_jobs" && typeof cols === "string") {
+            isCandidateJobsJoin = cols.includes("candidates");
+          }
           return chain;
         },
         insert(row: Row) {
@@ -177,9 +312,19 @@ function tenantSupabase() {
           filters.push((r) => r[col] === val);
           return chain;
         },
+        in(col: string, vals: unknown[]) {
+          const set = new Set(vals);
+          filters.push((r) => set.has(r[col]));
+          return chain;
+        },
         maybeSingle() {
+          if (insertRow) return Promise.resolve(finishInsert());
+          if (updatePatch) return Promise.resolve(finishUpdate());
           const rows = applyFilters();
-          return Promise.resolve({ data: rows[0] ? { ...rows[0] } : null, error: null });
+          return Promise.resolve({
+            data: hydrate(rows[0] ? { ...rows[0] } : null),
+            error: null,
+          });
         },
         single() {
           if (insertRow) return Promise.resolve(finishInsert());
@@ -191,7 +336,14 @@ function tenantSupabase() {
               error: { code: "PGRST116", message: "not found" },
             });
           }
-          return Promise.resolve({ data: { ...rows[0] }, error: null });
+          const data = hydrate({ ...rows[0] });
+          if (!data) {
+            return Promise.resolve({
+              data: null,
+              error: { code: "PGRST116", message: "not found" },
+            });
+          }
+          return Promise.resolve({ data, error: null });
         },
         then(
           resolve: (v: unknown) => unknown,
@@ -203,10 +355,10 @@ function tenantSupabase() {
           if (updatePatch) {
             return Promise.resolve(finishUpdate()).then(resolve, reject);
           }
-          return Promise.resolve({ data: applyFilters(), error: null }).then(
-            resolve,
-            reject,
-          );
+          return Promise.resolve({
+            data: applyFilters().map((r) => ({ ...r })),
+            error: null,
+          }).then(resolve, reject);
         },
       };
       return chain;
@@ -366,6 +518,33 @@ function postSend(
   );
 }
 
+function getFollowUp(
+  GET: (r: Request, ctx: { params: { id: string } }) => Promise<Response>,
+  id: string,
+) {
+  return GET(
+    new Request(`https://example.com/api/people/email/drafts/${id}/follow-up`, {
+      method: "GET",
+    }),
+    { params: { id } },
+  );
+}
+
+function postFollowUp(
+  POST: (r: Request, ctx: { params: { id: string } }) => Promise<Response>,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  return POST(
+    new Request(`https://example.com/api/people/email/drafts/${id}/follow-up`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+    { params: { id } },
+  );
+}
+
 let passed = 0;
 async function check(name: string, fn: () => Promise<void>): Promise<void> {
   resetState();
@@ -378,6 +557,9 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
   const collection = await import("@/app/api/people/email/drafts/route");
   const item = await import("@/app/api/people/email/drafts/[id]/route");
   const send = await import("@/app/api/people/email/drafts/[id]/send/route");
+  const followUp = await import(
+    "@/app/api/people/email/drafts/[id]/follow-up/route"
+  );
 
   await check("generate stamps tenant from context, not body", async () => {
     const res = await postGenerate(collection.POST, GENERATE_BODY);
@@ -551,6 +733,229 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
     assert(json.data.candidate_id === CAND_OK, "candidate_id");
     assert(json.data.employee_id == null, "employee_id null");
     assert(json.data.recipient_email === "casey@example.com", "candidate email");
+  });
+
+  await check("unsent draft follow-up is 409 and does not mutate", async () => {
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    const before = employeesTable[0].employment_status;
+
+    const listed = await getFollowUp(followUp.GET, id);
+    assert(listed.status === 409, `get ${listed.status}`);
+
+    const applied = await postFollowUp(followUp.POST, id, {
+      kind: "set_employment_status",
+      employment_status: "resignation_pending",
+    });
+    assert(applied.status === 409, `post ${applied.status}`);
+    assert(
+      employeesTable[0].employment_status === before,
+      "employee status unchanged",
+    );
+  });
+
+  await check("failed send follow-up is 409 and employee stays active", async () => {
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    gmailMode = "fail";
+    const sentRes = await postSend(send.POST, String(createdJson.data.id), {});
+    assert(sentRes.status === 502, "send failed");
+    assert(employeesTable[0].employment_status === "active", "still active");
+
+    const listed = await getFollowUp(followUp.GET, String(createdJson.data.id));
+    assert(listed.status === 409, `get ${listed.status}`);
+  });
+
+  await check("sent employee proposes resignation_pending and apply audits", async () => {
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    const sentRes = await postSend(send.POST, id, {});
+    assert(sentRes.status === 200, "sent");
+    assert(employeesTable[0].employment_status === "active", "send did not mutate status");
+
+    const listed = await getFollowUp(followUp.GET, id);
+    const listJson = (await listed.json()) as {
+      data: { proposals: Row[] };
+      error?: string;
+    };
+    assert(listed.status === 200, `get ${listed.status} ${listJson.error ?? ""}`);
+    assert(listJson.data.proposals.length === 1, "one proposal");
+    assert(listJson.data.proposals[0].kind === "set_employment_status", "kind");
+    assert(
+      listJson.data.proposals[0].employment_status === "resignation_pending",
+      "next status",
+    );
+
+    const applied = await postFollowUp(followUp.POST, id, {
+      kind: "set_employment_status",
+      employment_status: "resignation_pending",
+    });
+    const appliedJson = (await applied.json()) as { data: Row; error?: string };
+    assert(applied.status === 200, `post ${applied.status} ${appliedJson.error ?? ""}`);
+    assert(appliedJson.data.skipped === false, "not skipped");
+    assert(employeesTable[0].employment_status === "resignation_pending", "status applied");
+    assert(
+      auditEventsTable.some(
+        (e) =>
+          e.action === "follow_up" &&
+          e.entity_type === "employee" &&
+          (e.metadata as Row)?.draft_id === id,
+      ),
+      "follow_up audited",
+    );
+  });
+
+  await check("sent resignation_pending employee proposes offboarded", async () => {
+    employeesTable[0].employment_status = "resignation_pending";
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    const sentRes = await postSend(send.POST, id, {});
+    assert(sentRes.status === 200, "sent");
+
+    const listed = await getFollowUp(followUp.GET, id);
+    const listJson = (await listed.json()) as { data: { proposals: Row[] } };
+    assert(listJson.data.proposals[0]?.employment_status === "offboarded", "offboarded");
+  });
+
+  await check("employment follow-up is idempotent when already at target", async () => {
+    employeesTable[0].employment_status = "resignation_pending";
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    await postSend(send.POST, id, {});
+
+    const applied = await postFollowUp(followUp.POST, id, {
+      kind: "set_employment_status",
+      employment_status: "resignation_pending",
+    });
+    const json = (await applied.json()) as { data: Row; error?: string };
+    assert(applied.status === 200, `status ${applied.status} ${json.error ?? ""}`);
+    assert(json.data.skipped === true, "skipped");
+    assert(employeesTable[0].employment_status === "resignation_pending", "unchanged");
+  });
+
+  await check("candidate follow-up proposes contacted and rejects decision", async () => {
+    const created = await postGenerate(collection.POST, {
+      recipient_type: "candidate",
+      recipient_id: CAND_OK,
+      purpose: "outreach",
+      tone: "warm",
+      situation: "Invite Casey to a screening call next week.",
+    });
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    const sentRes = await postSend(send.POST, id, {});
+    assert(sentRes.status === 200, "sent");
+
+    const listed = await getFollowUp(followUp.GET, id);
+    const listJson = (await listed.json()) as { data: { proposals: Row[] } };
+    const kinds = listJson.data.proposals.map((p) => p.candidate_job_id);
+    assert(kinds.includes(CJ_NEW), "new proposed");
+    assert(kinds.includes(CJ_SHORT), "shortlisted proposed");
+    assert(!kinds.includes(CJ_DECISION), "decision not proposed");
+
+    const decision = await postFollowUp(followUp.POST, id, {
+      kind: "set_candidate_job_stage",
+      candidate_job_id: CJ_DECISION,
+      stage: "contacted",
+    });
+    assert(decision.status === 400, `decision ${decision.status}`);
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_DECISION)?.stage === "decision",
+      "decision unchanged",
+    );
+
+    const wrong = await postFollowUp(followUp.POST, id, {
+      kind: "set_candidate_job_stage",
+      candidate_job_id: CJ_WRONG_CAND,
+      stage: "contacted",
+    });
+    assert(wrong.status === 400, `wrong cand ${wrong.status}`);
+
+    const applied = await postFollowUp(followUp.POST, id, {
+      kind: "set_candidate_job_stage",
+      candidate_job_id: CJ_NEW,
+      stage: "contacted",
+    });
+    const appliedJson = (await applied.json()) as { data: Row; error?: string };
+    assert(applied.status === 200, `post ${applied.status} ${appliedJson.error ?? ""}`);
+    assert(candidateJobsTable.find((r) => r.id === CJ_NEW)?.stage === "contacted", "contacted");
+    assert(
+      auditEventsTable.some(
+        (e) => e.action === "follow_up" && e.entity_type === "candidate_job",
+      ),
+      "stage follow_up audited",
+    );
+  });
+
+  await check("candidate contacted follow-up is idempotent", async () => {
+    const created = await postGenerate(collection.POST, {
+      recipient_type: "candidate",
+      recipient_id: CAND_OK,
+      purpose: "outreach",
+      tone: "warm",
+      situation: "Invite Casey to a screening call next week.",
+    });
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    await postSend(send.POST, id, {});
+    const cj = candidateJobsTable.find((r) => r.id === CJ_NEW);
+    if (cj) cj.stage = "contacted";
+
+    const applied = await postFollowUp(followUp.POST, id, {
+      kind: "set_candidate_job_stage",
+      candidate_job_id: CJ_NEW,
+      stage: "contacted",
+    });
+    const json = (await applied.json()) as { data: Row; error?: string };
+    assert(applied.status === 200, `status ${applied.status} ${json.error ?? ""}`);
+    assert(json.data.skipped === true, "skipped");
+  });
+
+  await check("follow-up extra fields and unknown kind are 400", async () => {
+    const created = await postGenerate(collection.POST, GENERATE_BODY);
+    const createdJson = (await created.json()) as { data: Row };
+    const id = String(createdJson.data.id);
+    await postSend(send.POST, id, {});
+
+    const extra = await postFollowUp(followUp.POST, id, {
+      kind: "set_employment_status",
+      employment_status: "resignation_pending",
+      team_id: OTHER_TEAM_ID,
+    });
+    assert(extra.status === 400, `extra ${extra.status}`);
+    assert(employeesTable[0].employment_status === "active", "no mutate on extra");
+
+    const unknown = await postFollowUp(followUp.POST, id, {
+      kind: "delete_employee",
+    });
+    assert(unknown.status === 400, `unknown ${unknown.status}`);
+  });
+
+  await check("follow-up other team draft is 404", async () => {
+    draftsTable.push({
+      id: OTHER_DRAFT,
+      team_id: OTHER_TEAM_ID,
+      workspace_id: WORKSPACE_ID,
+      recipient_type: "employee",
+      employee_id: EMP_OK,
+      candidate_id: null,
+      recipient_email: "other@example.com",
+      subject: "Nope",
+      body: "Nope",
+      status: "sent",
+    });
+    const listed = await getFollowUp(followUp.GET, OTHER_DRAFT);
+    assert(listed.status === 404, `get ${listed.status}`);
+    const applied = await postFollowUp(followUp.POST, OTHER_DRAFT, {
+      kind: "set_employment_status",
+      employment_status: "resignation_pending",
+    });
+    assert(applied.status === 404, `post ${applied.status}`);
+    assert(employeesTable[0].employment_status === "active", "foreign not applied");
   });
 
   console.log(`\npeople-email-api: ${passed} checks passed`);

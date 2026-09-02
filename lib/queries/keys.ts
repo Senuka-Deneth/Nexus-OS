@@ -120,4 +120,7 @@ export const queryKeys = {
 
   peopleEmailDraft: (teamId: string | null, id: string) =>
     [...queryKeys.root(teamId), "people-email-draft", id] as const,
+
+  peopleEmailFollowUp: (teamId: string | null, id: string) =>
+    [...queryKeys.root(teamId), "people-email-follow-up", id] as const,
 } as const;

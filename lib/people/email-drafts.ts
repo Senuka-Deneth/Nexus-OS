@@ -393,7 +393,7 @@ async function loadBusinessSnippets(
   };
 }
 
-async function getDraft(
+export async function getDraft(
   ctx: PeopleTenantContext,
   id: string,
 ): Promise<PeopleEmailOk<PeopleMessageDraft> | PeopleEmailErr> {

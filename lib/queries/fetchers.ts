@@ -16,6 +16,8 @@ import type {
   CandidateJobStage,
   CandidateJobStageCounts,
   JobCandidateListItem,
+  PeopleEmailFollowUpApplyResult,
+  PeopleEmailFollowUpList,
   PeopleEmailPurpose,
   PeopleEmailRecipientType,
   PeopleEmailTone,
@@ -930,6 +932,57 @@ export async function sendPeopleEmailDraft(
   if (!res.ok) throw new Error(errFrom(res, json));
   if (!json.data || typeof json.data !== "object") {
     throw new Error("Invalid email send response");
+  }
+  return json.data;
+}
+
+export type PeopleEmailFollowUpApplyBody =
+  | {
+      kind: "set_employment_status";
+      employment_status: "resignation_pending" | "offboarded";
+    }
+  | {
+      kind: "set_candidate_job_stage";
+      candidate_job_id: string;
+      stage: "contacted";
+    };
+
+export async function peopleEmailFollowUpQuery(
+  id: string,
+): Promise<PeopleEmailFollowUpList> {
+  const res = await authenticatedFetch(
+    `/api/people/email/drafts/${encodeURIComponent(id)}/follow-up`,
+  );
+  const json = await readJson<{
+    data?: PeopleEmailFollowUpList;
+    error?: string;
+  }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object" || !Array.isArray(json.data.proposals)) {
+    throw new Error("Invalid follow-up response");
+  }
+  return json.data;
+}
+
+export async function applyPeopleEmailFollowUp(
+  id: string,
+  body: PeopleEmailFollowUpApplyBody,
+): Promise<PeopleEmailFollowUpApplyResult> {
+  const res = await authenticatedFetch(
+    `/api/people/email/drafts/${encodeURIComponent(id)}/follow-up`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{
+    data?: PeopleEmailFollowUpApplyResult;
+    error?: string;
+  }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid follow-up apply response");
   }
   return json.data;
 }

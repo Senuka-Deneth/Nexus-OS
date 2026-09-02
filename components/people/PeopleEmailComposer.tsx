@@ -10,6 +10,7 @@ import {
   PEOPLE_EMAIL_PURPOSE_LABELS,
   PEOPLE_EMAIL_TONE_LABELS,
 } from "@/components/people/email-labels";
+import { PeopleEmailFollowUp } from "@/components/people/PeopleEmailFollowUp";
 import {
   PEOPLE_CONTROL_CLASS,
   PEOPLE_TEXTAREA_CLASS,
@@ -447,6 +448,8 @@ export function PeopleEmailComposer() {
           </Button>
         </section>
       ) : null}
+
+      {sent && draft ? <PeopleEmailFollowUp draft={draft} /> : null}
 
       {sendOpen && draft ? (
         <ConfirmDialog

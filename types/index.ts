@@ -492,6 +492,53 @@ export interface PeopleMessageDraft {
   updated_at: string;
 }
 
+export const PEOPLE_EMAIL_FOLLOW_UP_KINDS = [
+  "set_employment_status",
+  "set_candidate_job_stage",
+] as const;
+export type PeopleEmailFollowUpKind =
+  (typeof PEOPLE_EMAIL_FOLLOW_UP_KINDS)[number];
+
+export const PEOPLE_EMAIL_FOLLOW_UP_EMPLOYMENT_STATUSES = [
+  "resignation_pending",
+  "offboarded",
+] as const;
+export type PeopleEmailFollowUpEmploymentStatus =
+  (typeof PEOPLE_EMAIL_FOLLOW_UP_EMPLOYMENT_STATUSES)[number];
+
+export const PEOPLE_EMAIL_FOLLOW_UP_STAGE = "contacted" as const;
+export type PeopleEmailFollowUpStage = typeof PEOPLE_EMAIL_FOLLOW_UP_STAGE;
+
+export type PeopleEmailFollowUpProposal =
+  | {
+      kind: "set_employment_status";
+      employee_id: string;
+      from_status: EmploymentStatus;
+      employment_status: PeopleEmailFollowUpEmploymentStatus;
+    }
+  | {
+      kind: "set_candidate_job_stage";
+      candidate_job_id: string;
+      candidate_id: string;
+      job_id: string;
+      job_title: string;
+      from_stage: CandidateJobStage;
+      stage: PeopleEmailFollowUpStage;
+    };
+
+export type PeopleEmailFollowUpList = {
+  draft_id: string;
+  proposals: PeopleEmailFollowUpProposal[];
+};
+
+export type PeopleEmailFollowUpApplyResult = {
+  draft_id: string;
+  kind: PeopleEmailFollowUpKind;
+  skipped: boolean;
+  employee: Employee | null;
+  candidate_job: JobCandidateListItem | null;
+};
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

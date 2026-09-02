@@ -85,8 +85,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2. — 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `app/people/email/page.tsx`, `scripts/people_email_api.test.ts`
   Done: 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `lib/people/email-transport.ts`, `app/api/people/email/drafts/route.ts`, `app/api/people/email/drafts/[id]/route.ts`, `app/api/people/email/drafts/[id]/send/route.ts`, `app/people/email/page.tsx`, `components/people/PeopleEmailComposer.tsx`, `scripts/people_email_schema.test.ts`, `scripts/people_email_api.test.ts`
 
-- [ ] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2.  
-  Done:
+- [x] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2. — 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `scripts/people_email_api.test.ts`
+  Done: 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `components/people/PeopleEmailComposer.tsx`, `lib/people/email-drafts.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_email_api.test.ts`
 
 - [ ] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2.  
   Done:
