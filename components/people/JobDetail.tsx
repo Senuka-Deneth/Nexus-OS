@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { ArrowLeft, Briefcase, Upload } from "lucide-react";
 import { ConfirmDialog } from "@/components/people/ConfirmDialog";
 import { CandidateCsvImport } from "@/components/people/CandidateCsvImport";
+import { JobCandidatesRank } from "@/components/people/JobCandidatesRank";
 import { JobForm } from "@/components/people/JobForm";
 import { JobStatusPill } from "@/components/people/JobStatusPill";
 import { useTenantScope } from "@/components/tenant/TenantScope";
@@ -131,7 +132,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   const archived = Boolean(job.archived_at);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <header className="hairline-b pb-6">
         <Link
           href="/people/jobs"
@@ -153,8 +154,8 @@ export function JobDetail({ jobId }: { jobId: string }) {
           ) : null}
         </div>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-          Edit role details and scoring weights. Import candidates from CSV onto
-          this job, or archive to hide it from the default list.
+          Review ranked candidates, edit role details and scoring weights, or
+          import more applicants from CSV.
         </p>
         {!archived ? (
           <div className="mt-4">
@@ -170,9 +171,11 @@ export function JobDetail({ jobId }: { jobId: string }) {
         <div className="rounded-xl border border-border-strong bg-surface-muted px-4 py-3 text-sm text-muted">
           This job is archived and hidden from the default list.
         </div>
-      ) : null}
+      ) : (
+        <JobCandidatesRank jobId={job.id} />
+      )}
 
-      <section className="app-glass-card rounded-xl p-5 sm:p-6">
+      <section className="app-glass-card mx-auto max-w-3xl rounded-xl p-5 sm:p-6">
         <JobForm
           key={job.id + job.updated_at}
           job={job}
@@ -182,7 +185,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
         />
       </section>
 
-      <section className="app-glass-card rounded-xl p-5 sm:p-6">
+      <section className="app-glass-card mx-auto max-w-3xl rounded-xl p-5 sm:p-6">
         <h2 className="nexus-section-title text-atmospheric-grey">Archive</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           Archiving hides the role from the default jobs list. It does not

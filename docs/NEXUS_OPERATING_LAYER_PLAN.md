@@ -73,8 +73,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3. — 2026-09-02 — `lib/ai/people-explain.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `scripts/people_match_explain.test.ts`
   Done: 2026-09-02 — `lib/ai/people-explain.ts`, `lib/ai/provider.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `types/index.ts`, `scripts/people_match_explain.test.ts`, `scripts/people_match_worker.test.ts`, `scripts/ai_provider.test.ts`, `package.json`
 
-- [ ] **D5** Candidate ranking UI (advisory; manual override). Depends: D4.  
-  Done:
+- [x] **D5** Candidate ranking UI (advisory; manual override). Depends: D4. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/JobDetail.tsx`, `scripts/people_candidate_jobs_api.test.ts`
+  Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/ranking-labels.ts`, `components/people/JobDetail.tsx`, `components/people/JobsList.tsx`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`, `package.json`
 
 - [ ] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5.  
   Done:

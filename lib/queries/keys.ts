@@ -101,4 +101,12 @@ export const queryKeys = {
 
   candidate: (teamId: string | null, id: string) =>
     [...queryKeys.root(teamId), "candidate", id] as const,
+
+  jobCandidates: (
+    teamId: string | null,
+    jobId: string,
+    limit: number,
+    offset: number,
+  ) =>
+    [...queryKeys.root(teamId), "job-candidates", jobId, limit, offset] as const,
 } as const;

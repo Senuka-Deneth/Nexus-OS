@@ -114,8 +114,8 @@ export function JobsList() {
             Jobs
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Open roles with versioned scoring weights. Matching and candidates
-            come later.
+            Open roles with versioned scoring weights. Open a job to review
+            ranked candidates and advisory match summaries.
           </p>
         </div>
         <Button onClick={() => router.push("/people/jobs/new")}>

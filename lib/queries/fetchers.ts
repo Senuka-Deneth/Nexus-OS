@@ -13,6 +13,7 @@ import type {
   EmploymentStatus,
   Job,
   JobStatus,
+  JobCandidateListItem,
   Metrics,
   MetricsTimeseries,
   MetricsTimeseriesRange,
@@ -642,6 +643,68 @@ export async function updateCandidateMutation(
   if (!res.ok) throw new Error(errFrom(res, json));
   if (!json.data || typeof json.data !== "object") {
     throw new Error("Invalid candidate response");
+  }
+  return json.data;
+}
+
+// --- Job candidate rankings (D5) ----------------------------------------------
+
+export const JOB_CANDIDATES_PAGE_SIZE = 50;
+
+export type JobCandidatesListParams = {
+  limit?: number;
+  offset?: number;
+};
+
+export type JobCandidatesListResult = {
+  data: JobCandidateListItem[];
+  count: number;
+};
+
+export async function jobCandidatesQuery(
+  jobId: string,
+  params: JobCandidatesListParams = {},
+): Promise<JobCandidatesListResult> {
+  const search = new URLSearchParams();
+  search.set("limit", String(params.limit ?? JOB_CANDIDATES_PAGE_SIZE));
+  search.set("offset", String(params.offset ?? 0));
+
+  const res = await authenticatedFetch(
+    `/api/people/jobs/${encodeURIComponent(jobId)}/candidates?${search.toString()}`,
+  );
+  const json = await readJson<{
+    data?: JobCandidateListItem[];
+    count?: number;
+    error?: string;
+  }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!Array.isArray(json.data)) {
+    throw new Error("Invalid job candidates response");
+  }
+  return {
+    data: json.data,
+    count: typeof json.count === "number" ? json.count : json.data.length,
+  };
+}
+
+export async function updateCandidateJobOverrideMutation(
+  applicationId: string,
+  manualRankOverride: number | null,
+): Promise<JobCandidateListItem> {
+  const res = await authenticatedFetch(
+    `/api/people/candidate-jobs/${encodeURIComponent(applicationId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ manual_rank_override: manualRankOverride }),
+    },
+  );
+  const json = await readJson<{ data?: JobCandidateListItem; error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid application response");
   }
   return json.data;
 }

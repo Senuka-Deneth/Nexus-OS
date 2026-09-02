@@ -381,6 +381,47 @@ export interface CandidateJob {
   updated_at: string;
 }
 
+/** Candidate identity fields joined onto a job application list row (D5). */
+export type JobCandidateCandidateSummary = {
+  id: string;
+  full_name: string;
+  headline: string | null;
+  current_role: string | null;
+  location: string | null;
+  source: string | null;
+  source_url: string | null;
+  consent_status: ConsentStatus;
+  notes_preview: string | null;
+};
+
+/** Ranked application row for the job dashboard (D5). */
+export type JobCandidateListItem = {
+  id: string;
+  candidate_id: string;
+  job_id: string;
+  stage: CandidateJobStage;
+  match_score: number | null;
+  match_components: Array<{
+    key: ScoringWeightKey;
+    raw: number;
+    weight: number;
+    contribution: number;
+    evidence: Array<{ field: string; value: string; note: string }>;
+  }> | null;
+  match_weights_used: CandidateJob["match_weights_used"];
+  scoring_version: string | null;
+  data_quality: CandidateJobDataQuality;
+  insufficient_reason: string | null;
+  ai_explanation: MatchExplanation | MatchExplanationError | null;
+  ai_model: string | null;
+  ai_prompt_version: string | null;
+  manual_rank_override: number | null;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string;
+  candidate: JobCandidateCandidateSummary;
+};
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;
