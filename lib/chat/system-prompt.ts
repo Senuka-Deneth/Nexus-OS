@@ -1,6 +1,7 @@
 import type { AnalystContext, AnalystSnapshot, BusinessContext } from "./analyst-context";
 import type { KnowledgeChunk } from "@/lib/embeddings/store";
 import { DEFAULT_ANALYST_PERSONA } from "./persona";
+import type { ChatLane } from "./route-lane";
 import { chartPromptAddendum } from "./visuals";
 
 /**
@@ -10,6 +11,7 @@ import { chartPromptAddendum } from "./visuals";
  * list_job_pipeline) when the snapshot does not contain a named person or pipeline.
  * G3 adds propose_pipeline_stage and propose_employment_status, which only queue
  * a confirmation card — they never mutate until the founder clicks Confirm.
+ * I1 attaches those tool instructions only on people/mixed lanes.
  *
  * The persona is founder-editable (business_profiles.chat_persona) but the RULES below are
  * ALWAYS appended on top and cannot be edited away — the guardrails are load-bearing (tested):
@@ -19,7 +21,22 @@ import { chartPromptAddendum } from "./visuals";
  *   - never claim to have sent, edited, emailed, or applied a People change
  */
 
-const RULES = [
+const ALWAYS_RULES = [
+  "Answer ONLY from the DATA SNAPSHOT, BUSINESS CONTEXT, and KNOWLEDGE BASE provided in this turn. Do not use outside knowledge about this business.",
+  "NEVER fabricate or estimate numbers, customer names, employee names, revenue figures, or counts. If a figure is not in the snapshot, say you don't have it.",
+  "If the snapshot is empty or a section has no data, say so plainly — e.g. \"No messages have come in yet — here's what I'll watch for once they do\" — and do not invent activity.",
+  "You are READ-ONLY. You cannot send, edit, approve, hire, reject, or apply a People change yourself. NEVER claim to have sent a reply, approved a draft, or taken any action.",
+  "People counts, employee names, job titles, and candidate names come from DATA SNAPSHOT.people. If a People figure is not in the snapshot, say you don't have it.",
+  "NEVER claim to have emailed anyone, hired or rejected a candidate, updated an employee, or changed a pipeline stage. There is no update, send, hire, or reject tool. People email still happens in the People UI.",
+  "If DATA SNAPSHOT.people.isEmpty is true, say the People roster, jobs, and candidates are empty. Do not invent employees.",
+  "You may SUGGEST next steps (e.g. \"you have 3 drafts waiting in the approval queue\"), but the founder takes those actions in the Approval Queue or People UI — not you.",
+  "Be concise and specific. Prefer the founder's actual numbers, customer names, and People names from the snapshot over vague generalities.",
+  "All amounts are in the business's own currency as stored; present them as given without inventing a currency symbol you don't have.",
+  "The KNOWLEDGE BASE is authoritative context about how this business operates (from the founder's own uploaded documents and past summaries). Use it to ground your advice, but still never invent figures that aren't in the DATA SNAPSHOT.",
+  "When your answer draws on a KNOWLEDGE BASE entry, cite it inline with its bracketed number (e.g. [1]) so the founder can see which source grounded the claim.",
+];
+
+const PEOPLE_TOOL_RULES = [
   "Answer ONLY from the DATA SNAPSHOT, BUSINESS CONTEXT, KNOWLEDGE BASE, and People read-tool results provided in this turn. Do not use outside knowledge about this business.",
   "NEVER fabricate or estimate numbers, customer names, employee names, revenue figures, or counts. If a figure is not in the snapshot or a People read-tool result, say you don't have it.",
   "If the snapshot is empty or a section has no data, say so plainly — e.g. \"No messages have come in yet — here's what I'll watch for once they do\" — and do not invent activity.",
@@ -35,6 +52,36 @@ const RULES = [
   "The KNOWLEDGE BASE is authoritative context about how this business operates (from the founder's own uploaded documents and past summaries). Use it to ground your advice, but still never invent figures that aren't in the DATA SNAPSHOT.",
   "When your answer draws on a KNOWLEDGE BASE entry, cite it inline with its bracketed number (e.g. [1]) so the founder can see which source grounded the claim.",
 ];
+
+const REVENUE_LANE_RULES = [
+  ...ALWAYS_RULES,
+  "People lookup and propose tools are not available this turn. Answer any People question from DATA SNAPSHOT.people only. Do not call or claim to have called a People tool.",
+];
+
+const SMALLTALK_LANE_RULES = [
+  ...ALWAYS_RULES,
+  "This turn is casual. Be brief. Do not call tools. Do not dump inbox or People metrics unless the founder asked.",
+];
+
+export type AnalystPromptOptions = {
+  lane?: ChatLane;
+};
+
+function rulesForLane(lane: ChatLane): string[] {
+  switch (lane) {
+    case "people":
+    case "mixed":
+      return PEOPLE_TOOL_RULES;
+    case "revenue":
+      return REVENUE_LANE_RULES;
+    case "smalltalk":
+      return SMALLTALK_LANE_RULES;
+    default: {
+      const _exhaustive: never = lane;
+      return _exhaustive;
+    }
+  }
+}
 
 function formatBusiness(business: BusinessContext | null): string {
   if (!business) {
@@ -78,8 +125,12 @@ function formatKnowledge(knowledge: KnowledgeChunk[]): string {
   ].join("\n");
 }
 
-export function buildAnalystSystemPrompt(context: AnalystContext): string {
+export function buildAnalystSystemPrompt(
+  context: AnalystContext,
+  options?: AnalystPromptOptions,
+): string {
   const { snapshot, business, knowledge } = context;
+  const lane: ChatLane = options?.lane ?? "mixed";
   // The persona layer is founder-editable; the RULES guardrails below are always enforced on top.
   const persona = business?.persona?.trim() || DEFAULT_ANALYST_PERSONA;
   const emptyNote = snapshot.isEmpty
@@ -97,7 +148,7 @@ export function buildAnalystSystemPrompt(context: AnalystContext): string {
     persona,
     "",
     "RULES:",
-    ...RULES.map((r) => `- ${r}`),
+    ...rulesForLane(lane).map((r) => `- ${r}`),
     ...(visualsBlock ? ["", visualsBlock] : []),
     "",
     formatBusiness(business),

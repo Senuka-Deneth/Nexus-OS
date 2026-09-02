@@ -106,7 +106,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
   Done: 2026-09-02 — `lib/people/sources/`, `lib/people/candidates.ts`, `types/index.ts`, `scripts/people_candidate_source.test.ts`, `scripts/people_candidates_api.test.ts`, `package.json`
 - [x] **H2** One consented external source (human-picked; not GitHub scrape-by-default). Depends: H1. — 2026-09-02 — `lib/people/from-source.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`
   Done: 2026-09-02 — `lib/people/sources/github.ts`, `lib/people/from-source.ts`, `lib/people/candidate-jobs.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`, `scripts/people_from_source.test.ts`, `package.json`
-- [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
+- [x] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools). Depends: G2, G3. — 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`
+  Done: 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_router.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [ ] **J1** Embed People summaries only when a feature reads that `kind`
 - [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)
 - [ ] **L1** Production hardening audit
@@ -985,6 +986,42 @@ POST /api/people/candidates/from-source with requireApiTenantContext + rateLimit
 UI: one “Add from GitHub” field, explicit consent_status control. Never candidate_applied unless they applied. Optional job_id reuses C3 attach + enqueuePeopleMatchJob.
 
 No GitHub OAuth unless a human asks. No discovery browser.
+```
+
+---
+
+### I1 — Mini-router (Chat lanes)
+
+**Goal:** One Chat agent. A pure function picks `people` | `revenue` | `smalltalk` | `mixed` and attaches the existing G2+G3 People tools only on people/mixed turns. No new tools, no LLM classifier, no domain agents, no n8n.
+
+**Reuse:** `lib/chat/openai.ts` tool loop, `lib/chat/system-prompt.ts` RULES, `lib/chat/people-tools.ts`, `lib/chat/people-propose.ts`, `app/api/chat/route.ts`. Confirm/cancel stays on `/api/chat/actions/[id]`.
+
+**Out of scope:** new tools, Chat UI lane chip, snapshot query slimming, extra classify LLM call, GitHub/H2, embeddings (`kind`), migrations.
+
+**Verify:** `npm run test:chat-router`, `npm run test:prompt-injection`, `npm run test:chat-analyst`, `npm run test:chat-people-tools`, `npm run test:chat-proposed-actions`, `npm run lint`.
+
+**Prompt:**
+
+```text
+Implement partition I1 only.
+
+Deterministic mini-router in lib/chat/route-lane.ts (no LLM, no DB, no server-only).
+Lanes: people | revenue | smalltalk | mixed. Exhaustive switch with a never default.
+
+routeChatLane({ message, history }):
+1. Score the latest user message with closed people vs revenue lexicons. Do not treat tool names (search_employees, update_employee, …) as people signals.
+2. Both scores → mixed. People only → people. Revenue only → revenue.
+3. Greeting / identity-only (short hi/thanks/who-are-you) with no domain nouns → smalltalk.
+4. Else sticky: walk prior user turns newest-first, skip smalltalk, reuse last people/revenue/mixed.
+5. Else mixed (fail open so a named person without lexicon still gets tools).
+
+Bare "pipeline" → mixed. Candidate/job/stage/shortlist + pipeline → people. Lead/inbox/sales/deal + pipeline → revenue.
+
+toolsForLane: people/mixed → the five existing G2+G3 names; revenue/smalltalk → [].
+Wire app/api/chat/route.ts and lib/chat/openai.ts so the tool loop is skipped when the list is empty.
+buildAnalystSystemPrompt(ctx, { lane = "mixed" }): people/mixed keep call-tool RULES; revenue/smalltalk do not instruct People tool calls. Read-only / no-email / no-hire fragments always stay.
+
+User text cannot add tools. Routing never authorizes a mutation. No new tools. No n8n. No migration.
 ```
 
 ---

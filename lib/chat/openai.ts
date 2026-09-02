@@ -12,6 +12,7 @@ import {
   isPeopleReadToolName,
   PEOPLE_READ_TOOLS,
 } from "@/lib/chat/people-tools";
+import { toolsForLane, type ChatLane } from "@/lib/chat/route-lane";
 
 /**
  * Server-only chat wrapper for the Revenue Analyst. Thin wrapper over `lib/ai/provider` — the
@@ -122,15 +123,25 @@ async function* streamChunks(
   return finalizedToolCalls(acc);
 }
 
+function openaiToolsForLane(lane: ChatLane) {
+  const allowed = new Set(toolsForLane(lane));
+  if (allowed.size === 0) return [];
+  return [...PEOPLE_READ_TOOLS, ...PEOPLE_PROPOSE_TOOLS].filter((tool) =>
+    allowed.has(tool.function.name),
+  );
+}
+
 /**
  * Stream the analyst reply as text deltas. Yields nothing but the assistant's content chunks.
- * When `peopleTools` is set (and not mock mode), runs up to two People tool rounds
- * (G2 reads + G3 propose-only) before streaming the final answer.
+ * When `peopleTools` is set, the lane is people/mixed, and not mock mode, runs up to two
+ * People tool rounds (G2 reads + G3 propose-only) before streaming the final answer.
+ * Revenue and smalltalk lanes skip the tool loop (I1).
  */
 export async function* streamAnalystReply(params: {
   system: string;
   history: ChatTurn[];
   peopleTools?: PeopleProposeContext;
+  lane?: ChatLane;
 }): AsyncGenerator<string, void, unknown> {
   if (isMockMode()) {
     yield "This is a mock analyst reply used for CI/tests.";
@@ -144,15 +155,17 @@ export async function* streamAnalystReply(params: {
     { role: "system", content: params.system },
     ...params.history,
   ];
+  const lane: ChatLane = params.lane ?? "mixed";
+  const tools = openaiToolsForLane(lane);
 
-  if (params.peopleTools) {
+  if (params.peopleTools && tools.length > 0) {
     const peopleTools = params.peopleTools;
     for (let round = 0; round < MAX_PEOPLE_TOOL_ROUNDS; round += 1) {
       const stream = await client.chat.completions.create({
         model,
         temperature: 0.3,
         stream: true,
-        tools: [...PEOPLE_READ_TOOLS, ...PEOPLE_PROPOSE_TOOLS],
+        tools,
         messages: messages as never,
       });
       const toolCalls = yield* streamChunks(stream, true);
