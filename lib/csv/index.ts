@@ -22,8 +22,8 @@ export {
   getCsvProfile,
   normalizeHeaderKey,
 } from "@/lib/csv/profiles";
+export type { ConsentStatus } from "@/types";
 export type {
-  ConsentStatus,
   CsvFieldSpec,
   CsvProfile,
   CsvProfileName,
