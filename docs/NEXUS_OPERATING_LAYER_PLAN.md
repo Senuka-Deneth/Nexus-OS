@@ -88,13 +88,13 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2. — 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `scripts/people_email_api.test.ts`
   Done: 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `components/people/PeopleEmailComposer.tsx`, `lib/people/email-drafts.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_email_api.test.ts`
 
-- [ ] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2.  
-  Done:
+- [x] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2. — 2026-09-02 — `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `scripts/chat_analyst.test.ts`
+  Done: 2026-09-02 — `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `lib/chat/persona.ts`, `scripts/chat_analyst.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 
 ### Wave 1 complete
 
-- [ ] **W1** All Wave 1 boxes above are `[x]`. Founder can: roster + CSV, job + ranked candidates, four stages, explicit email send, Chat answers from People snapshot without mutating. Run `npm run test:gate`.  
-  Done:
+- [x] **W1** All Wave 1 boxes above are `[x]`. Founder can: roster + CSV, job + ranked candidates, four stages, explicit email send, Chat answers from People snapshot without mutating. Run `npm run test:gate`. — 2026-09-02
+  Done: 2026-09-02 — `npm run test:gate` pass (lint, People tests, `test:chat-analyst`, `test:prompt-injection`, n8n export, build)
 
 ### Wave 2 — do not start until W1 is ticked
 
