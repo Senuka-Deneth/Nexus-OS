@@ -1,16 +1,16 @@
 # Graph Report - Nexus-OS  (2026-09-02)
 
 ## Corpus Check
-- 472 files · ~270,486 words
+- 488 files · ~278,925 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2954 nodes · 6166 edges · 201 communities (166 shown, 35 thin omitted)
+- 3080 nodes · 6548 edges · 208 communities (174 shown, 34 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 89 edges (avg confidence: 0.63)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c8dcc973`
+- Built from commit: `16197adc`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,9 +28,9 @@
 - autopilot_send.test.ts
 - PipelineFlow.tsx
 - webhook/route.ts
-- cn
+- plans.ts
 - build_n8n_workflow_exports.js
-- utils.ts
+- inbox/page.tsx
 - 12. Partitions (copy-paste prompts)
 - settings/route.ts
 - customers/page.tsx
@@ -38,24 +38,24 @@
 - employee-csv.ts
 - analyst-context.ts
 - inbound-events.ts
-- EmployeeCsvImport.tsx
+- types/index.ts
 - api-security.ts
-- MetricsTrendChart.tsx
+- cn
 - audit.test.ts
 - sync.ts
-- meta/callback/route.ts
+- meta/helpers.ts
 - components.json
 - useTenantScope
 - supabase_auth_email_config.js
 - createSupabaseBrowserClient
-- dashboard/page.tsx
+- report/page.tsx
 - dashboardData.ts
 - local-dev-signup/route.ts
-- readJsonObjectWithLimit
+- result/route.ts
 - posts/types.ts
 - chat_analyst.test.ts
 - resources/page.tsx
-- types/index.ts
+- approval/page.tsx
 - people_employees_api.test.ts
 - dependencies
 - provider.ts
@@ -67,28 +67,28 @@
 - noise_filter.js
 - inbound_events_idempotency.test.ts
 - meta/send.ts
-- visuals.ts
+- ChartBlock.tsx
 - InviteManager.tsx
 - meta_send.test.ts
 - Nexus OS — Operating Layer & People Intelligence
 - launch_workspace_rpc.test.mjs
-- draft.ts
+- classify.ts
 - data.ts
 - seed_demo_inbox.ts
 - useRealtimeData.ts
 - AppWindow.tsx
-- business-docs/route.ts
+- SettingsView.tsx
 - fetchers.ts
 - member4_classification_tests.js
 - test-buy-back-report.mjs
 - AppShell.tsx
 - check_signup_backend.js
 - graphify in Nexus OS (and any repo)
-- CaptionSection.tsx
+- ReviewSubmit.tsx
 - middleware.ts
 - meta-credentials/route.ts
 - smoke_classification_openai.js
-- CreateWithAiPath.tsx
+- CaptionSection.tsx
 - extends
 - ensure-graphify.sh
 - privacy/page.tsx
@@ -107,7 +107,7 @@
 - Channel Sender — Approval-to-Send Contract
 - Tenant model unification ADR
 - send_e2e.integration.ts
-- leads/route.ts
+- n8n/conversations/route.ts
 - Nexus OS — Revenue Command Center
 - Navy Blue + Green Accent Palette
 - gmail_backfill.test.ts
@@ -116,15 +116,15 @@
 - postcss.config.mjs
 - Configuration
 - csv/parse.ts
-- resend-confirmation/route.ts
+- login/page.tsx
 - PostCard.tsx
 - StepAccount.tsx
-- inbound-finalize/route.ts
+- meta/callback/route.ts
 - Build checklist
 - PricingSection.tsx
 - people_employees_csv.test.ts
 - mailbox/credentials.ts
-- ChartBlock.tsx
+- people_jobs_api.test.ts
 - tailwind.config.ts
 - 2. Verdict on the incoming 12-phase plan
 - people_schema.test.ts
@@ -135,7 +135,7 @@
 - 5. People domain model (minimal, extensible)
 - followups_drain.test.ts
 - StepWorkspace.tsx
-- approval/route.ts
+- outbound-jobs.ts
 - daily_report_route.test.ts
 - csv_engine.test.ts
 - Test Results — Classification Prompt v1
@@ -154,15 +154,15 @@
 - inbound_record.test.ts
 - Migration notes — drift sync (Task 3.1, Member 3)
 - gmail/credentials.ts
-- publish/route.ts
+- approval/route.ts
 - store.ts
-- n8n_job_tokens.test.ts
+- n8n-job-tokens.ts
 - ai_classify_route.test.ts
-- rateLimitDurable
-- PostsWorkspace.tsx
+- social_post_route.test.ts
+- draft.ts
 - Classification Prompt v1 Test Results (5/5 PASS)
-- login/page.tsx
-- gmail-credentials/route.ts
+- AuthSplitLayout.tsx
+- fail
 - app/page.tsx
 - Gmail Add-on / Metadata-First Flow
 - Google Restricted Scope Problem (gmail.readonly)
@@ -183,11 +183,18 @@
 - Nexus OS Revenue Command Center
 - WF0a Gmail Intake Workflow
 - WF3 Reply Agent Workflow
-- chat_prompt_injection.test.ts
+- jobs.ts
 - n8n workflow exports
 - gmail-sync/route.ts
+- jobs/route.ts
+- jobs/[id]/route.ts
 - tenant_routing_e2e.test.ts
+- writeAuditEvent
 - pdf-parse.d.ts
+- meta/credentials.ts
+- daily-buyback.ts
+- mailbox-sync/route.ts
+- Platform
 - migration_order.test.mjs
 - Nexus OS — Launch-Readiness Report (2026-07-15)
 - rate_limit_durable.test.ts
@@ -201,24 +208,24 @@
 - approval_route.test.ts
 - Launch activation runbook
 - route_reference.test.mjs
-- chat/page.tsx
+- EmployeeCsvImport.tsx
 - workflow_logs_route.test.ts
 - prepare_n8n_deploy_payload.mjs
 - internal_leads.test.ts
-- JSON_LIMITS
-- ai.ts
+- draft/route.ts
+- readJsonObjectWithLimit
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 126 edges
-2. `rateLimit()` - 99 edges
-3. `readJsonObjectWithLimit()` - 83 edges
+1. `cn()` - 132 edges
+2. `rateLimit()` - 105 edges
+3. `readJsonObjectWithLimit()` - 87 edges
 4. `createServerClient()` - 73 edges
-5. `scripts` - 65 edges
-6. `requireApiTenantContext()` - 58 edges
-7. `jsonError()` - 52 edges
-8. `createSupabaseBrowserClient()` - 42 edges
-9. `JSON_LIMITS` - 41 edges
-10. `parseWorkspaceId()` - 41 edges
+5. `scripts` - 66 edges
+6. `requireApiTenantContext()` - 64 edges
+7. `jsonError()` - 56 edges
+8. `JSON_LIMITS` - 43 edges
+9. `createSupabaseBrowserClient()` - 42 edges
+10. `authenticatedFetch()` - 41 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `GET()` --calls--> `requireApiTenantContext()`  [EXTRACTED]
@@ -226,11 +233,11 @@
 - `GET()` --calls--> `requireApiTenantContext()`  [EXTRACTED]
   app/api/conversations/route.ts → lib/api-security.ts
 - `GET()` --calls--> `requireApiTenantContext()`  [EXTRACTED]
+  app/api/gmail/status/route.ts → lib/api-security.ts
+- `GET()` --calls--> `requireApiTenantContext()`  [EXTRACTED]
   app/api/meta/status/route.ts → lib/api-security.ts
 - `GET()` --calls--> `requireApiTenantContext()`  [EXTRACTED]
   app/api/metrics/route.ts → lib/api-security.ts
-- `SocialOAuthState` --references--> `Platform`  [EXTRACTED]
-  app/api/social/helpers.ts → lib/posts/types.ts
 
 ## Import Cycles
 - None detected.
@@ -239,19 +246,19 @@
 - **Nexus OS Core Message Pipeline (Intake → Approval)** — readme_wf0a_gmail_intake, readme_noise_filter, readme_wf2_ai_classification, readme_wf3_reply_agent, readme_founder_approval_queue [EXTRACTED 1.00]
 - **Gmail Integration Lifecycle (OAuth/IMAP → Testing → Add-on Pivot)** — readme_gmail_imap_integration, docs_gmail_integration_test_results_gmail_integration_test_results, docs_gmail_validation_warnings_classification_warning_impact_classification, docs_gmail_new_implementation_gmail_addon_flow [INFERRED 0.85]
 
-## Communities (201 total, 35 thin omitted)
+## Communities (208 total, 34 thin omitted)
 
 ### Community 0 - "content.ts"
-Cohesion: 0.08
-Nodes (17): FeatureBento(), ICONS, ProtocolStepper(), DiagramProps, STEP_DIAGRAMS, ACCENT_SOFT, ACCENT_VAR, CHANNELS (+9 more)
+Cohesion: 0.09
+Nodes (15): FeatureBento(), ICONS, ProtocolStepper(), DiagramProps, STEP_DIAGRAMS, ACCENT_SOFT, ACCENT_VAR, FAQ_SECTION (+7 more)
 
 ### Community 1 - "employees.ts"
-Cohesion: 0.11
-Nodes (39): dynamic, fromService(), GET(), PATCH(), RouteContext, AUDIT_DIFF_KEYS, auditDiff(), auditSnapshot() (+31 more)
+Cohesion: 0.12
+Nodes (37): dynamic, fromService(), GET(), POST(), AUDIT_DIFF_KEYS, auditDiff(), auditSnapshot(), boundedString() (+29 more)
 
 ### Community 2 - "scripts"
 Cohesion: 0.03
-Nodes (65): scripts, build, check:auth-email, check:signup-backend, dev, fix:auth-email, graphify, graphify:ensure (+57 more)
+Nodes (66): scripts, build, check:auth-email, check:signup-backend, dev, fix:auth-email, graphify, graphify:ensure (+58 more)
 
 ### Community 3 - "tenant_intake_mapping.test.mjs"
 Cohesion: 0.06
@@ -270,12 +277,12 @@ Cohesion: 0.40
 Nodes (5): backfillAfterDate(), DEFAULT_BACKFILL_DAYS, enqueueGmailBackfillJob(), GmailBackfillJob, GmailBackfillJobStatus
 
 ### Community 7 - "csv/index.ts"
-Cohesion: 0.11
-Nodes (38): applyUnmappedDefaults(), CoerceErr, coerceField(), CoerceOk, collectRowErrors(), countSummary(), CsvImportFileError, CsvImportResult (+30 more)
+Cohesion: 0.10
+Nodes (40): applyUnmappedDefaults(), CoerceErr, coerceField(), CoerceOk, collectRowErrors(), countSummary(), CsvColumnMapping, CsvImportFileError (+32 more)
 
 ### Community 8 - "social/helpers.ts"
-Cohesion: 0.15
-Nodes (24): appUrl(), dynamic, exchangeCode(), GET(), runtime, settingsRedirect(), TokenResult, dynamic (+16 more)
+Cohesion: 0.19
+Nodes (21): appUrl(), dynamic, exchangeCode(), GET(), runtime, settingsRedirect(), TokenResult, dynamic (+13 more)
 
 ### Community 9 - "compilerOptions"
 Cohesion: 0.06
@@ -287,23 +294,23 @@ Nodes (7): credResult, fakeClient, GmailSendError, moduleWithLoad, Row, SeedOpts
 
 ### Community 11 - "PipelineFlow.tsx"
 Cohesion: 0.12
-Nodes (18): Hero(), AnimatedChip(), Chip, CHIPS, HORIZONTAL, laneFor(), Layout, opacityAt() (+10 more)
+Nodes (18): AnimatedChip(), Chip, CHIPS, HORIZONTAL, laneFor(), Layout, opacityAt(), PipelineFlow() (+10 more)
 
 ### Community 12 - "webhook/route.ts"
 Cohesion: 0.14
 Nodes (21): ExtractedMessage, extractMessages(), verifyMetaSignature(), WebhookPlatform, dynamic, GET(), POST(), runtime (+13 more)
 
-### Community 13 - "cn"
-Cohesion: 0.07
-Nodes (35): MiniCard(), InboxFilterGroups(), TierCard(), appNav, AppSidebar(), isNavActive(), SidebarBrand(), SidebarChrome() (+27 more)
+### Community 13 - "plans.ts"
+Cohesion: 0.13
+Nodes (19): TierCard(), PricingFAQ(), PricingTierCard(), PricingTierCardProps, PricingCard(), PricingCardProps, planTitle(), StepPayment() (+11 more)
 
 ### Community 14 - "build_n8n_workflow_exports.js"
 Cohesion: 0.07
 Nodes (23): buildInboundFinalizePayloadJs, connGmail, dedupDecision, dedupLookupQuery, emailTrigger, fs, gmailWebhook, ifKeepNode() (+15 more)
 
-### Community 15 - "utils.ts"
-Cohesion: 0.06
-Nodes (50): ApprovalFilter, ApprovalPage(), DraftItem, fallbackConversation(), FILTERS, intentLabel(), mergeDraftsWithConversations(), SORT_WEIGHT (+42 more)
+### Community 15 - "inbox/page.tsx"
+Cohesion: 0.16
+Nodes (16): InboxFilterGroups(), InboxPageContent(), INTENT_OPTIONS, intentBadgeLabel(), IntentFilter, sourceIcon(), sourceLabel(), timelineCompletion() (+8 more)
 
 ### Community 16 - "12. Partitions (copy-paste prompts)"
 Cohesion: 0.10
@@ -311,71 +318,71 @@ Nodes (20): 12. Partitions (copy-paste prompts), A1 — Append-only audit log, A
 
 ### Community 17 - "settings/route.ts"
 Cohesion: 0.09
-Nodes (31): applyChannelPatch(), APPROVAL_MODES, billingPeriodBounds(), CHANNEL_ACTIONS, CHANNEL_TARGETS, ChannelPatch, COMMON_TIMEZONES, dynamic (+23 more)
+Nodes (30): applyChannelPatch(), APPROVAL_MODES, billingPeriodBounds(), CHANNEL_ACTIONS, CHANNEL_TARGETS, ChannelPatch, COMMON_TIMEZONES, dynamic (+22 more)
 
 ### Community 18 - "customers/page.tsx"
 Cohesion: 0.12
-Nodes (19): CustomersPage(), initialsOf(), ChannelMarquee(), AnimatedHeading(), Eyebrow(), DIGITS, Odometer(), Section() (+11 more)
+Nodes (19): CustomersPage(), initialsOf(), Eyebrow(), DIGITS, Odometer(), Reveal(), Section(), SectionProps (+11 more)
 
 ### Community 19 - "callback/handler.ts"
 Cohesion: 0.08
 Nodes (38): absoluteRedirect(), defaultGmailCallbackDeps, errorRedirect(), GmailCallbackDeps, GoogleTokenResponse, GoogleUserInfo, handleGmailOAuthCallback(), logStageError() (+30 more)
 
 ### Community 20 - "employee-csv.ts"
-Cohesion: 0.14
-Nodes (28): utf8ByteLength(), applyPlannedRow(), bodyFromPlannedRow(), collectErrors(), EMPLOYEE_CSV_MAX_ROWS, EmployeeCsvExportOk, EmployeeCsvImportOk, EmployeeCsvPreviewOk (+20 more)
+Cohesion: 0.13
+Nodes (29): utf8ByteLength(), formatCsvImportSummary(), applyPlannedRow(), bodyFromPlannedRow(), collectErrors(), EMPLOYEE_CSV_MAX_ROWS, EmployeeCsvExportOk, EmployeeCsvImportOk (+21 more)
 
 ### Community 21 - "analyst-context.ts"
-Cohesion: 0.17
-Nodes (16): aggregateSnapshot(), AnalystSnapshot, buildAnalystContext(), BusinessContext, BusinessRow, ConversationRow, DraftRow, emptySnapshot() (+8 more)
+Cohesion: 0.18
+Nodes (16): aggregateSnapshot(), AnalystContext, buildAnalystContext(), BusinessRow, ConversationRow, DraftRow, emptySnapshot(), IntentLabel (+8 more)
 
 ### Community 22 - "inbound-events.ts"
 Cohesion: 0.16
 Nodes (18): clampInt(), dynamic, POST(), runtime, applyReplayOutcome(), fetchStuckInboundEvents(), FetchStuckInboundEventsOptions, InboundEventStatus (+10 more)
 
-### Community 23 - "EmployeeCsvImport.tsx"
+### Community 23 - "types/index.ts"
 Cohesion: 0.07
-Nodes (41): dynamic, dynamic, ConfirmDialog(), ACTION_STYLES, displayValue(), EmployeeCsvImport(), FIELD_LABELS, mappingFromPlan() (+33 more)
+Nodes (45): dynamic, EmployeeForm(), EmployeeFormProps, emptyToNull(), FIELD_LIMITS, needsSensitiveConfirm(), EmployeesList(), formatIsoDate() (+37 more)
 
 ### Community 24 - "api-security.ts"
-Cohesion: 0.12
-Nodes (23): dynamic, GET(), Body, dynamic, MailboxSettings, POST(), readImapSettings(), readSmtpSettings() (+15 more)
+Cohesion: 0.09
+Nodes (28): dynamic, GET(), dynamic, GET(), runtime, Body, dynamic, MailboxSettings (+20 more)
 
-### Community 25 - "MetricsTrendChart.tsx"
-Cohesion: 0.31
-Nodes (8): formatAxisValue(), formatDateLabel(), MetricsTrendChart(), MetricsTrendChartSkeleton(), niceMax(), PAD, SERIES, MetricsTimeseriesPoint
+### Community 25 - "cn"
+Cohesion: 0.05
+Nodes (48): churnDraftTag(), DashboardPage(), hotLeadDraftTag(), isDraftPipelineReady(), TIMESERIES_RANGES, urgencyBadgeLabel(), ZERO_METRICS, VisualToggle() (+40 more)
 
 ### Community 26 - "audit.test.ts"
-Cohesion: 0.11
-Nodes (16): AuditEventInput, AuditTenantContext, AuditWriteResult, boundId(), boundLabel(), boundMetadata(), writeAuditEvent(), auditFile (+8 more)
+Cohesion: 0.15
+Nodes (9): auditFile, baseEvent, fakeClient, inserted, migrationFiles, migrationsDir, moduleWithLoad, Row (+1 more)
 
 ### Community 27 - "sync.ts"
-Cohesion: 0.11
-Nodes (22): dynamic, POST(), runtime, RFC-5322, asStringArray(), EmailIntakePayload, fetchMailboxMessages(), MailboxMessage (+14 more)
+Cohesion: 0.13
+Nodes (18): RFC-5322, asStringArray(), EmailIntakePayload, fetchMailboxMessages(), MailboxMessage, mailboxMessageToIntakePayload(), stripAngle(), defaultMailboxSyncDeps (+10 more)
 
-### Community 28 - "meta/callback/route.ts"
-Cohesion: 0.09
-Nodes (37): absoluteRedirect(), dynamic, errorRedirect(), exchangeCodeForToken(), exchangeLongLivedToken(), fetchPageAccounts(), fetchWaPhoneNumberId(), GET() (+29 more)
+### Community 28 - "meta/helpers.ts"
+Cohesion: 0.13
+Nodes (19): dynamic, GET(), runtime, decodeOAuthState(), encodeOAuthState(), isMetaPlatform(), isUuid(), META_GRAPH_VERSION (+11 more)
 
 ### Community 29 - "components.json"
 Cohesion: 0.11
 Nodes (17): aliases, components, hooks, lib, ui, utils, iconLibrary, rsc (+9 more)
 
 ### Community 30 - "useTenantScope"
-Cohesion: 0.18
-Nodes (12): dynamic, EmployeeCreate(), readSessionContext(), TenantScopeContext, TenantScopeGate(), TenantScopeValue, TenantSessionContext, useTenantQueryTeamId() (+4 more)
+Cohesion: 0.08
+Nodes (27): ChatMessage, ChatPage(), ChatRole, decodeSourcesHeader(), KnowledgeSource, SOURCE_KIND_LABEL, SUGGESTIONS, useAiStatus() (+19 more)
 
 ### Community 31 - "supabase_auth_email_config.js"
 Cohesion: 0.31
 Nodes (16): analyzeConfig(), buildPatchPayload(), check(), expectedRedirects(), main(), managementRequest(), normalizeOrigin(), parseBoolEnv() (+8 more)
 
 ### Community 32 - "createSupabaseBrowserClient"
-Cohesion: 0.23
-Nodes (10): AuthGuard(), AuthGuardContext, AuthGuardContextValue, isPublicAuthPath(), PUBLIC_AUTH_PATHS, useOrganization(), resolveOrganizationIdForUser(), trimmedUuid() (+2 more)
+Cohesion: 0.17
+Nodes (12): dynamic, AuthGuard(), AuthGuardContext, AuthGuardContextValue, isPublicAuthPath(), PUBLIC_AUTH_PATHS, PostsWorkspace(), useOrganization() (+4 more)
 
-### Community 33 - "dashboard/page.tsx"
-Cohesion: 0.08
-Nodes (37): churnDraftTag(), DashboardPage(), hotLeadDraftTag(), isDraftPipelineReady(), TIMESERIES_RANGES, urgencyBadgeLabel(), ZERO_METRICS, formatTimestamp() (+29 more)
+### Community 33 - "report/page.tsx"
+Cohesion: 0.12
+Nodes (21): formatTimestamp(), LogsPage(), RESULT_FILTERS, resultTone(), actionTaken(), AiUsageCard(), csvEscape(), formatReportDate() (+13 more)
 
 ### Community 34 - "dashboardData.ts"
 Cohesion: 0.14
@@ -385,9 +392,9 @@ Nodes (10): ConversationRow, DailyReportRow, DashboardSnapshot, emptyDashboardSn
 Cohesion: 0.13
 Nodes (23): dynamic, isValidEmail(), normalizeEmail(), POST(), runtime, dynamic, ExistingUser, findUserByEmail() (+15 more)
 
-### Community 36 - "readJsonObjectWithLimit"
-Cohesion: 0.12
-Nodes (26): boundedString(), dynamic, optionalTokenCount(), POST(), runtime, dynamic, POST(), dynamic (+18 more)
+### Community 36 - "result/route.ts"
+Cohesion: 0.38
+Nodes (6): boundedString(), dynamic, isTerminalStatus(), POST(), TERMINAL_STATUSES, TerminalStatus
 
 ### Community 37 - "posts/types.ts"
 Cohesion: 0.18
@@ -401,9 +408,9 @@ Nodes (5): fakeTokens, Filter, moduleWithLoad, Row, Store
 Cohesion: 0.13
 Nodes (14): DocLink, DocSection, quickStart, sections, changelog, faqs, groups, Resource (+6 more)
 
-### Community 40 - "types/index.ts"
-Cohesion: 0.07
-Nodes (31): dynamic, GET(), RouteContext, dynamic, GET(), APPROVAL_STATUSES, dynamic, GET() (+23 more)
+### Community 40 - "approval/page.tsx"
+Cohesion: 0.06
+Nodes (43): dynamic, GET(), RouteContext, dynamic, GET(), APPROVAL_STATUSES, dynamic, GET() (+35 more)
 
 ### Community 41 - "people_employees_api.test.ts"
 Cohesion: 0.14
@@ -415,7 +422,7 @@ Nodes (45): clsx, date-fns, dotenv, framer-motion, imap, imapflow, lucide-react,
 
 ### Community 43 - "provider.ts"
 Cohesion: 0.11
-Nodes (24): dynamic, GET(), generateSessionTitle(), summarizeSession(), LOADING, AI_MODELS, AiOperation, clientCache (+16 more)
+Nodes (25): generateSessionTitle(), summarizeSession(), LOADING, AI_MODELS, AiNotConfiguredError, AiOperation, clientCache, ClientPurpose (+17 more)
 
 ### Community 44 - "workflow_2_classification.js"
 Cohesion: 0.47
@@ -426,8 +433,8 @@ Cohesion: 0.38
 Nodes (5): draftViaApp(), getAppUrl(), getIngestToken(), items, out
 
 ### Community 46 - "rateLimit"
-Cohesion: 0.10
-Nodes (40): dynamic, GET(), UsageRow, DELETE(), GET(), DELETE(), dynamic, GET() (+32 more)
+Cohesion: 0.08
+Nodes (50): dynamic, GET(), dynamic, GET(), UsageRow, DELETE(), dynamic, GET() (+42 more)
 
 ### Community 47 - "workflow_4_buy_back_report.js"
 Cohesion: 0.38
@@ -446,16 +453,16 @@ Cohesion: 0.22
 Nodes (6): fakeClient, moduleWithLoad, post(), Row, sign(), store
 
 ### Community 51 - "meta/send.ts"
-Cohesion: 0.13
-Nodes (21): ResolvedMetaCredential, buildMetaSendRequest(), GraphSendResponse, graphUrl(), isMetaSendEnabled(), MetaSendAuth, MetaSendError, MetaSendParams (+13 more)
+Cohesion: 0.14
+Nodes (19): buildMetaSendRequest(), GraphSendResponse, graphUrl(), isMetaSendEnabled(), MetaSendAuth, MetaSendError, MetaSendParams, MetaSendRequest (+11 more)
 
-### Community 52 - "visuals.ts"
-Cohesion: 0.20
-Nodes (10): AssistantBody(), AssistantSegment, CHART_FENCE_TAG, isPoint(), NexusChartPoint, NexusChartSeries, NexusChartSpec, parseAssistantContent() (+2 more)
+### Community 52 - "ChartBlock.tsx"
+Cohesion: 0.11
+Nodes (21): AssistantBody(), BarChart(), ChartBlock(), DONUT_COLORS, DonutChart(), formatValue(), LineChart(), niceMax() (+13 more)
 
 ### Community 53 - "InviteManager.tsx"
-Cohesion: 0.17
-Nodes (14): dynamic, CopyLinkButton(), InviteManager(), STATUS_STYLES, StatusPill(), buildInviteLink(), createInvite(), Invite (+6 more)
+Cohesion: 0.19
+Nodes (13): dynamic, CopyLinkButton(), InviteManager(), STATUS_STYLES, StatusPill(), buildInviteLink(), createInvite(), Invite (+5 more)
 
 ### Community 54 - "meta_send.test.ts"
 Cohesion: 0.13
@@ -469,13 +476,13 @@ Nodes (16): 10. Partition tracker, 11. Shared agent contract (paste at the top o
 Cohesion: 0.25
 Nodes (6): canonicalMigration, __dirname, guardMigration, onboarding, root, stepWorkspace
 
-### Community 57 - "draft.ts"
-Cohesion: 0.07
-Nodes (38): buildUserPayload(), ClassificationResult, classifyMessage(), ClassifyMessageParams, ClassifyMessageResponse, MOCK_CLASSIFICATION, parseClassification(), buildUserPayload() (+30 more)
+### Community 57 - "classify.ts"
+Cohesion: 0.13
+Nodes (19): buildUserPayload(), ClassificationResult, classifyMessage(), ClassifyMessageParams, ClassifyMessageResponse, MOCK_CLASSIFICATION, parseClassification(), cache (+11 more)
 
 ### Community 58 - "data.ts"
-Cohesion: 0.21
-Nodes (16): ReviewSubmit(), composeCaptionWithHashtags(), scheduledPostApprovalFields(), buildStoragePath(), captionsFromText(), createPost(), deletePost(), extensionOf() (+8 more)
+Cohesion: 0.27
+Nodes (12): ReviewSubmit(), composeCaptionWithHashtags(), scheduledPostApprovalFields(), buildStoragePath(), captionsFromText(), deletePost(), extensionOf(), schedulePost() (+4 more)
 
 ### Community 59 - "seed_demo_inbox.ts"
 Cohesion: 0.39
@@ -489,13 +496,13 @@ Nodes (5): CommandCenter(), RealtimeConversation, RealtimeLead, useRealtimeConve
 Cohesion: 0.12
 Nodes (10): AppPanel(), AppWindowFrame(), inboxRows, nav, NAV_FOR_STOP, PANELS, reportStats, trend (+2 more)
 
-### Community 62 - "business-docs/route.ts"
-Cohesion: 0.31
-Nodes (8): dynamic, POST(), safeFileName(), ACCEPTED_DOC_EXTENSIONS, ACCEPTED_DOC_MIME_TYPES, extensionOf(), extractText(), isSupportedDoc()
+### Community 62 - "SettingsView.tsx"
+Cohesion: 0.09
+Nodes (18): dynamic, MailboxConnectForm(), Preset, PRESETS, SettingsSection(), SettingsSectionProps, META_LABELS, planPricingCopy() (+10 more)
 
 ### Community 63 - "fetchers.ts"
-Cohesion: 0.09
-Nodes (37): dynamic, ChatUsageToolbar(), formatTokens(), VisualToggle(), EmployeeDetail(), META_LABELS, planPricingCopy(), planTitle() (+29 more)
+Cohesion: 0.11
+Nodes (46): ChatUsageToolbar(), formatTokens(), EmployeeDetail(), JobDetail(), SettingsView(), authenticatedFetch(), aiUsageQuery(), businessDocsQuery() (+38 more)
 
 ### Community 64 - "member4_classification_tests.js"
 Cohesion: 0.38
@@ -517,33 +524,33 @@ Nodes (5): { createClient }, fail(), main(), REQUIRED_COLUMNS, REQUIRED_RPC_PATH
 Cohesion: 0.33
 Nodes (5): Commands (use the wrapper in agents), graphify in Nexus OS (and any repo), Install CLI (once per machine), New repo checklist, Per-repo bootstrap
 
-### Community 69 - "CaptionSection.tsx"
+### Community 69 - "ReviewSubmit.tsx"
 Cohesion: 0.26
-Nodes (13): Busy, ConfirmPublishDialog(), defaultLocalDateTime(), ScheduleDialog(), Busy, PLATFORM_ICONS, PlatformIcon(), PRIMARY_BTN (+5 more)
+Nodes (11): ConfirmPublishDialog(), defaultLocalDateTime(), ScheduleDialog(), Busy, PLATFORM_ICONS, PlatformIcon(), PRIMARY_BTN, SECONDARY_BTN (+3 more)
 
 ### Community 70 - "middleware.ts"
 Cohesion: 0.50
 Nodes (4): config, isProtectedPath(), middleware(), PROTECTED_PREFIXES
 
 ### Community 71 - "meta-credentials/route.ts"
-Cohesion: 0.09
-Nodes (34): CredentialRow, dynamic, GET(), MetaDebugTokenResponse, POST(), refreshPageAccessToken(), tokenNeedsRefresh(), CredentialRow (+26 more)
+Cohesion: 0.10
+Nodes (31): CredentialRow, dynamic, GET(), GoogleTokenResponse, refreshAccessToken(), tokenNeedsRefresh(), CredentialRow, dynamic (+23 more)
 
 ### Community 72 - "smoke_classification_openai.js"
 Cohesion: 0.50
 Nodes (4): fs, loadEnvLocal(), main(), path
 
-### Community 73 - "CreateWithAiPath.tsx"
-Cohesion: 0.24
-Nodes (15): CaptionSection(), CreateWithAiPath(), CreateWithAiPathProps, CurrentGen, getGeneration(), listConnectedPlatforms(), signStoragePath(), editImage() (+7 more)
+### Community 73 - "CaptionSection.tsx"
+Cohesion: 0.23
+Nodes (17): Busy, CaptionSection(), CreateWithAiPath(), CreateWithAiPathProps, CurrentGen, createPost(), getGeneration(), listConnectedPlatforms() (+9 more)
 
 ### Community 74 - "extends"
 Cohesion: 0.50
 Nodes (3): extends, next/core-web-vitals, next/typescript
 
 ### Community 82 - "BrandAssetPicker.tsx"
-Cohesion: 0.39
-Nodes (7): BrandAssetPicker(), BrandAssetPickerProps, BRAND_ASSETS_BUCKET, deleteBrandAsset(), listBrandAssets(), uploadBrandAsset(), BrandAsset
+Cohesion: 0.36
+Nodes (7): BrandAssetPicker(), BrandAssetPickerProps, BrandAssetThumb(), BRAND_ASSETS_BUCKET, deleteBrandAsset(), listBrandAssets(), BrandAsset
 
 ### Community 87 - "Gmail integration test results"
 Cohesion: 0.10
@@ -581,9 +588,9 @@ Nodes (20): 1. Target architecture (corrected), 2. Current build state (grounded
 Cohesion: 0.29
 Nodes (9): assert(), fetchConversation(), fetchDraft(), ids, insert(), main(), ok(), seedTrio() (+1 more)
 
-### Community 97 - "leads/route.ts"
-Cohesion: 0.16
-Nodes (16): boundedString(), CONVERSATION_SOURCES, dynamic, pickAllowed(), POST(), POST_STATUSES, boundedString(), dynamic (+8 more)
+### Community 97 - "n8n/conversations/route.ts"
+Cohesion: 0.38
+Nodes (6): boundedString(), CONVERSATION_SOURCES, dynamic, pickAllowed(), POST(), POST_STATUSES
 
 ### Community 98 - "Nexus OS — Revenue Command Center"
 Cohesion: 0.13
@@ -609,41 +616,41 @@ Nodes (8): Configuration, Email confirmation auto-login, `.env.local` reference,
 Cohesion: 0.18
 Nodes (16): alignRow(), CSV_DELIMITERS, CsvDelimiter, CsvParseErr, CsvParseOk, CsvParseResult, detectDelimiter(), headerError() (+8 more)
 
-### Community 106 - "resend-confirmation/route.ts"
-Cohesion: 0.23
-Nodes (12): dynamic, isValidEmail(), normalizeEmail(), POST(), runtime, dynamic, GET(), isRateLimitError() (+4 more)
+### Community 106 - "login/page.tsx"
+Cohesion: 0.14
+Nodes (19): dynamic, isValidEmail(), normalizeEmail(), POST(), runtime, dynamic, GET(), isRateLimitError() (+11 more)
 
 ### Community 107 - "PostCard.tsx"
-Cohesion: 0.27
-Nodes (9): BrandAssetThumb(), captionExcerpt(), PostCard(), useSignedUrl(), UploadMediaPath(), UploadMediaPathProps, POST_MEDIA_BUCKET, uploadToBucket() (+1 more)
+Cohesion: 0.19
+Nodes (11): Composer(), ComposerProps, Step, captionExcerpt(), PostCard(), useSignedUrl(), UploadMediaPath(), UploadMediaPathProps (+3 more)
 
 ### Community 108 - "StepAccount.tsx"
 Cohesion: 0.22
 Nodes (13): canUseLocalDevSignupFallback(), isEmailDeliveryError(), isRateLimitError(), LocalDevSignupResponse, logSupabaseAuthEmailError(), mapSignUpError(), normalizeSignupEmail(), StepAccount() (+5 more)
 
-### Community 109 - "inbound-finalize/route.ts"
-Cohesion: 0.16
-Nodes (12): boundedString(), dynamic, FinalizeEventInput, INBOUND_PLATFORMS, POST(), runtime, boundedString(), dynamic (+4 more)
+### Community 109 - "meta/callback/route.ts"
+Cohesion: 0.19
+Nodes (18): absoluteRedirect(), dynamic, errorRedirect(), exchangeCodeForToken(), exchangeLongLivedToken(), fetchPageAccounts(), fetchWaPhoneNumberId(), GET() (+10 more)
 
 ### Community 110 - "Build checklist"
 Cohesion: 0.33
 Nodes (6): Build checklist, Human (not agent), Wave 0 — already complete, Wave 1 — build in this order, Wave 1 complete, Wave 2 — do not start until W1 is ticked
 
 ### Community 111 - "PricingSection.tsx"
-Cohesion: 0.19
-Nodes (14): IntegrationsSection(), LandingBillingToggle(), AnimatedHeadingProps, Reveal(), RevealProps, BillingCycle, PRICING, DURATION (+6 more)
+Cohesion: 0.18
+Nodes (15): AuthMode, Hero(), LandingBillingToggle(), AnimatedHeading(), AnimatedHeadingProps, RevealProps, HERO, PRICING (+7 more)
 
 ### Community 112 - "people_employees_csv.test.ts"
 Cohesion: 0.15
 Nodes (8): CSV_IMPORT_MAX_ROWS, auditEventsTable, AuthMode, check(), employeesTable, moduleWithLoad, resetState(), Row
 
 ### Community 113 - "mailbox/credentials.ts"
-Cohesion: 0.18
-Nodes (11): MailboxCredentialError, MailboxCredentialResult, MailboxEndpoint, MailboxRow, IMPORTANT: this only matches `credential_type='imap'` rows, so it NEVER…, ResolvedMailboxCredential, headerSafe(), sendSmtpMessage() (+3 more)
+Cohesion: 0.16
+Nodes (12): getWorkspaceMailboxCredential(), MailboxCredentialError, MailboxCredentialResult, MailboxEndpoint, MailboxRow, IMPORTANT: this only matches `credential_type='imap'` rows, so it NEVER…, ResolvedMailboxCredential, headerSafe() (+4 more)
 
-### Community 114 - "ChartBlock.tsx"
-Cohesion: 0.24
-Nodes (11): BarChart(), ChartBlock(), DONUT_COLORS, DonutChart(), formatValue(), LineChart(), niceMax(), PAD (+3 more)
+### Community 114 - "people_jobs_api.test.ts"
+Cohesion: 0.13
+Nodes (8): DEFAULT_SCORING_WEIGHTS, auditEventsTable, AuthMode, check(), jobsTable, moduleWithLoad, resetState(), Row
 
 ### Community 116 - "2. Verdict on the incoming 12-phase plan"
 Cohesion: 0.50
@@ -654,8 +661,8 @@ Cohesion: 0.25
 Nodes (5): migrationFiles, migrationsDir, peopleFile, sql, tables
 
 ### Community 118 - "signup/page.tsx"
-Cohesion: 0.15
-Nodes (20): hasSignupProgress(), SignupPage(), STEP_FROM_PARAM, STEP_LABELS, stepFromParam(), PricingCard(), PricingCardProps, ProgressBar() (+12 more)
+Cohesion: 0.18
+Nodes (17): hasSignupProgress(), SignupPage(), STEP_FROM_PARAM, STEP_LABELS, stepFromParam(), ProgressBar(), ProgressBarProps, defaultSignupSnapshot() (+9 more)
 
 ### Community 119 - "StepGmail.tsx"
 Cohesion: 0.22
@@ -678,12 +685,12 @@ Cohesion: 0.25
 Nodes (6): assert(), fakeClient, main(), moduleWithLoad, Row, store
 
 ### Community 124 - "StepWorkspace.tsx"
-Cohesion: 0.19
-Nodes (11): FormInput(), FormInputProps, FormSelect(), COMPANY_SIZES, LaunchWorkspaceResponse, parseWorkspaceId(), StepWorkspace(), StepWorkspaceProps (+3 more)
+Cohesion: 0.17
+Nodes (12): FormInput(), FormInputProps, FormSelect(), COMPANY_SIZES, LaunchWorkspaceResponse, parseWorkspaceId(), StepWorkspace(), StepWorkspaceProps (+4 more)
 
-### Community 125 - "approval/route.ts"
-Cohesion: 0.25
-Nodes (9): ApprovalBody, approvalWebhookUrl(), dynamic, PATCH(), OutboundJobOutcome, OutboundJobRow, OutboundJobStatus, queueOutboundJob() (+1 more)
+### Community 125 - "outbound-jobs.ts"
+Cohesion: 0.40
+Nodes (4): OutboundJobOutcome, OutboundJobRow, OutboundJobStatus, QueueOutboundJobInput
 
 ### Community 126 - "daily_report_route.test.ts"
 Cohesion: 0.29
@@ -759,37 +766,41 @@ Nodes (11): 1. Remote-only migrations pulled into the repo (verbatim), 2. Local-
 Cohesion: 0.28
 Nodes (8): CredentialRow, getWorkspaceGmailCredential(), GmailCredentialError, GmailCredentialResult, GoogleTokenResponse, refreshAccessToken(), ResolvedGmailCredential, tokenNeedsRefresh()
 
-### Community 145 - "publish/route.ts"
-Cohesion: 0.43
-Nodes (6): dynamic, markPublishFailed(), maxDuration, POST(), publishWebhookUrl(), n8nWebhookAuthHeaders()
+### Community 145 - "approval/route.ts"
+Cohesion: 0.23
+Nodes (11): ApprovalBody, approvalWebhookUrl(), dynamic, PATCH(), dynamic, markPublishFailed(), maxDuration, POST() (+3 more)
 
 ### Community 146 - "store.ts"
-Cohesion: 0.27
-Nodes (13): embedBatch(), embedText(), mockVector(), resolveModel(), chunkText(), deleteSummaryForSource(), EmbeddingKind, KIND_WEIGHTS (+5 more)
-
-### Community 147 - "n8n_job_tokens.test.ts"
-Cohesion: 0.22
-Nodes (4): fakeClient, moduleWithLoad, rows, TokenRow
-
-### Community 149 - "rateLimitDurable"
-Cohesion: 0.20
-Nodes (12): dynamic, GET(), dynamic, GET(), clientKey(), rateLimitDurable(), signPostMediaUrl(), assert() (+4 more)
-
-### Community 150 - "PostsWorkspace.tsx"
-Cohesion: 0.22
-Nodes (6): dynamic, Composer(), ComposerProps, Step, PostsWorkspace(), View
-
-### Community 152 - "login/page.tsx"
-Cohesion: 0.13
-Nodes (16): AuthLikeError, backoffSeconds(), isRateLimitError(), LoginForm(), PASSWORD_BACKOFF_SECONDS, resolvePostLoginPath(), SessionLike, AuthAmbientField() (+8 more)
-
-### Community 153 - "gmail-credentials/route.ts"
 Cohesion: 0.32
-Nodes (7): CredentialRow, dynamic, GET(), GoogleTokenResponse, POST(), refreshAccessToken(), tokenNeedsRefresh()
+Nodes (11): embedText(), chunkText(), deleteSummaryForSource(), EmbeddingKind, KIND_WEIGHTS, matchKnowledge(), minSimilarity(), toVectorLiteral() (+3 more)
+
+### Community 147 - "n8n-job-tokens.ts"
+Cohesion: 0.13
+Nodes (15): consumeN8nJobToken(), ConsumeN8nJobTokenResult, ConsumeRpcRow, hashToken(), issueN8nJobToken(), IssueN8nJobTokenOptions, N8nJobTokenBindings, N8nJobTokenClaims (+7 more)
+
+### Community 149 - "social_post_route.test.ts"
+Cohesion: 0.40
+Nodes (5): assert(), fakeClient, main(), moduleWithLoad, postRow
+
+### Community 150 - "draft.ts"
+Cohesion: 0.19
+Nodes (13): buildUserPayload(), draftReply(), DraftReplyParams, DraftReplyResponse, MOCK_DRAFT, parseDraft(), ReplyDraftResult, SimilarContextChunk (+5 more)
+
+### Community 152 - "AuthSplitLayout.tsx"
+Cohesion: 0.24
+Nodes (8): AuthAmbientField(), AuthBrandPanel(), AuthModeToggle(), AuthSplitLayout(), AuthSplitLayoutProps, AuthBrandCopy, LOGIN_BRAND, SIGNUP_BRAND_BY_STEP
+
+### Community 153 - "fail"
+Cohesion: 0.41
+Nodes (14): boundedString(), experienceRangeError(), extraFieldsError(), fail(), hasOwn(), parseCreateBody(), parseJobStatus(), parseOptionalText() (+6 more)
 
 ### Community 154 - "app/page.tsx"
-Cohesion: 0.39
-Nodes (3): FaqSection(), FinalCta(), PricingSection()
+Cohesion: 0.24
+Nodes (6): ChannelMarquee(), FaqSection(), FinalCta(), IntegrationsSection(), PricingSection(), TrustSection()
+
+### Community 174 - "jobs.ts"
+Cohesion: 0.17
+Nodes (12): AUDIT_DIFF_KEYS, CREATE_FIELDS, isRemotePolicy(), JobListOk, JobOk, LIMITS, ListJobsQuery, ParsedCreate (+4 more)
 
 ### Community 175 - "n8n workflow exports"
 Cohesion: 0.40
@@ -799,9 +810,37 @@ Nodes (4): n8n auth hardening (2026-07-17), n8n workflow exports, Notes, Social 
 Cohesion: 0.50
 Nodes (4): runGmailSync(), dynamic, POST(), runtime
 
+### Community 177 - "jobs/route.ts"
+Cohesion: 0.24
+Nodes (11): dynamic, fromService(), GET(), POST(), auditSnapshot(), createJob(), escapeIlikeTerm(), isErr() (+3 more)
+
+### Community 178 - "jobs/[id]/route.ts"
+Cohesion: 0.27
+Nodes (10): dynamic, fromService(), GET(), PATCH(), RouteContext, auditDiff(), getJob(), JobErr (+2 more)
+
 ### Community 179 - "tenant_routing_e2e.test.ts"
 Cohesion: 0.80
 Nodes (4): assert(), liveGmailSmoke(), run(), runScript()
+
+### Community 180 - "writeAuditEvent"
+Cohesion: 0.36
+Nodes (7): AuditEventInput, AuditTenantContext, AuditWriteResult, boundId(), boundLabel(), boundMetadata(), writeAuditEvent()
+
+### Community 182 - "meta/credentials.ts"
+Cohesion: 0.33
+Nodes (6): CredentialRow, getWorkspaceMetaCredential(), MetaCredentialError, MetaCredentialResult, ResolvedMetaCredential, MetaPlatform
+
+### Community 183 - "daily-buyback.ts"
+Cohesion: 0.47
+Nodes (5): DailyReportRunResult, reportDateInColombo(), runDailyBuyBackReports(), startOfReportDayIso(), Tenant
+
+### Community 184 - "mailbox-sync/route.ts"
+Cohesion: 0.50
+Nodes (4): dynamic, POST(), runtime, runMailboxSync()
+
+### Community 185 - "Platform"
+Cohesion: 0.50
+Nodes (5): SocialOAuthState, PostDraftInput, PostEditInput, Platform, PostCaptions
 
 ### Community 186 - "migration_order.test.mjs"
 Cohesion: 0.17
@@ -824,8 +863,8 @@ Cohesion: 0.29
 Nodes (3): fakeClient, moduleWithLoad, rpcRows
 
 ### Community 201 - "system-prompt.ts"
-Cohesion: 0.22
-Nodes (10): AnalystContext, DEFAULT_ANALYST_PERSONA, buildAnalystSystemPrompt(), formatBusiness(), formatKnowledge(), formatSnapshot(), RULES, chartPromptAddendum() (+2 more)
+Cohesion: 0.13
+Nodes (12): AnalystSnapshot, BusinessContext, DEFAULT_ANALYST_PERSONA, buildAnalystSystemPrompt(), formatBusiness(), formatKnowledge(), formatSnapshot(), RULES (+4 more)
 
 ### Community 213 - "clean_n8n_export.js"
 Cohesion: 0.33
@@ -836,8 +875,8 @@ Cohesion: 0.13
 Nodes (25): dynamic, POST(), runtime, defaultGmailSyncDeps, GmailSyncDeps, SyncCredentialRow, WorkspaceSyncOutcome, decodeBase64Url() (+17 more)
 
 ### Community 219 - "createServerClient"
-Cohesion: 0.11
-Nodes (29): dynamic, maxDuration, POST(), dynamic, maxDuration, POST(), dynamic, OutboundJobRow (+21 more)
+Cohesion: 0.07
+Nodes (57): boundedString(), dynamic, optionalTokenCount(), POST(), runtime, dynamic, POST(), dynamic (+49 more)
 
 ### Community 225 - "approval_route.test.ts"
 Cohesion: 0.18
@@ -851,9 +890,9 @@ Nodes (9): 1. Pre-secret gate (no production credentials), 2. Supabase migration
 Cohesion: 0.20
 Nodes (7): apiRoutes, __dirname, middlewareSrc, root, settingsSrc, uiPages, watchedDirs
 
-### Community 228 - "chat/page.tsx"
-Cohesion: 0.17
-Nodes (14): ChatMessage, ChatPage(), ChatRole, decodeSourcesHeader(), KnowledgeSource, SOURCE_KIND_LABEL, SUGGESTIONS, useAiStatus() (+6 more)
+### Community 228 - "EmployeeCsvImport.tsx"
+Cohesion: 0.09
+Nodes (26): dynamic, dynamic, dynamic, ConfirmDialog(), ACTION_STYLES, displayValue(), EmployeeCsvImport(), FIELD_LABELS (+18 more)
 
 ### Community 232 - "workflow_logs_route.test.ts"
 Cohesion: 0.22
@@ -867,33 +906,33 @@ Nodes (7): __dirname, exportsDir, LIVE_IDS, payload, raw, root, SUPABASE_CRED
 Cohesion: 0.25
 Nodes (3): moduleWithLoad, Row, store
 
-### Community 238 - "JSON_LIMITS"
-Cohesion: 0.17
-Nodes (15): boundedString(), dynamic, POST(), runtime, boundedString(), dynamic, normalizeClassification(), POST() (+7 more)
+### Community 238 - "draft/route.ts"
+Cohesion: 0.11
+Nodes (23): boundedString(), dynamic, POST(), runtime, boundedString(), dynamic, normalizeClassification(), POST() (+15 more)
 
-### Community 245 - "ai.ts"
+### Community 245 - "readJsonObjectWithLimit"
 Cohesion: 0.12
-Nodes (23): dynamic, maxDuration, POST(), dynamic, maxDuration, dynamic, maxDuration, POST() (+15 more)
+Nodes (30): dynamic, maxDuration, POST(), dynamic, maxDuration, POST(), dynamic, maxDuration (+22 more)
 
 ## Knowledge Gaps
-- **1148 isolated node(s):** `next/core-web-vitals`, `next/typescript`, `dynamic`, `UsageRow`, `dynamic` (+1143 more)
+- **1177 isolated node(s):** `next/core-web-vitals`, `next/typescript`, `dynamic`, `UsageRow`, `dynamic` (+1172 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `cn` to `content.ts`, `utils.ts`, `customers/page.tsx`, `EmployeeCsvImport.tsx`, `login/page.tsx`, `MetricsTrendChart.tsx`, `dashboard/page.tsx`, `resources/page.tsx`, `InviteManager.tsx`, `data.ts`, `fetchers.ts`, `AppShell.tsx`, `CaptionSection.tsx`, `CreateWithAiPath.tsx`, `BrandAssetPicker.tsx`, `chat/page.tsx`, `PostCard.tsx`, `PricingSection.tsx`, `ChartBlock.tsx`, `signup/page.tsx`, `StepGmail.tsx`, `StepWorkspace.tsx`?**
-  _High betweenness centrality (0.083) - this node is a cross-community bridge._
-- **Why does `rateLimit()` connect `rateLimit` to `employees.ts`, `api/conversations/route.ts`, `social/helpers.ts`, `webhook/route.ts`, `publish/route.ts`, `settings/route.ts`, `callback/handler.ts`, `rateLimitDurable`, `inbound-events.ts`, `api-security.ts`, `sync.ts`, `meta/callback/route.ts`, `local-dev-signup/route.ts`, `readJsonObjectWithLimit`, `provider.ts`, `gmail-sync/route.ts`, `business-docs/route.ts`, `gmail-backfill/route.ts`, `createServerClient`, `leads/route.ts`, `resend-confirmation/route.ts`, `inbound-finalize/route.ts`, `ai.ts`, `timeseries.ts`, `approval/route.ts`?**
-  _High betweenness centrality (0.059) - this node is a cross-community bridge._
-- **Why does `createServerClient()` connect `createServerClient` to `send_e2e.integration.ts`, `leads/route.ts`, `readJsonObjectWithLimit`, `meta-credentials/route.ts`, `seed_demo_inbox.ts`, `webhook/route.ts`, `inbound-finalize/route.ts`, `JSON_LIMITS`, `wf2_tenant_contract.test.ts`, `callback/handler.ts`, `rateLimitDurable`, `inbound-events.ts`, `gmail-backfill/route.ts`, `gmail-credentials/route.ts`, `sync.ts`, `meta/callback/route.ts`, `approval/route.ts`, `api-security.ts`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Why does `cn()` connect `cn` to `content.ts`, `plans.ts`, `inbox/page.tsx`, `customers/page.tsx`, `types/index.ts`, `AuthSplitLayout.tsx`, `useTenantScope`, `report/page.tsx`, `resources/page.tsx`, `approval/page.tsx`, `ChartBlock.tsx`, `InviteManager.tsx`, `data.ts`, `SettingsView.tsx`, `fetchers.ts`, `AppShell.tsx`, `ReviewSubmit.tsx`, `CaptionSection.tsx`, `BrandAssetPicker.tsx`, `EmployeeCsvImport.tsx`, `login/page.tsx`, `PricingSection.tsx`, `signup/page.tsx`, `StepGmail.tsx`, `StepWorkspace.tsx`?**
+  _High betweenness centrality (0.077) - this node is a cross-community bridge._
+- **Why does `rateLimit()` connect `rateLimit` to `employees.ts`, `api/conversations/route.ts`, `social/helpers.ts`, `webhook/route.ts`, `approval/route.ts`, `settings/route.ts`, `callback/handler.ts`, `inbound-events.ts`, `api-security.ts`, `meta/helpers.ts`, `local-dev-signup/route.ts`, `result/route.ts`, `gmail-sync/route.ts`, `jobs/route.ts`, `jobs/[id]/route.ts`, `mailbox-sync/route.ts`, `gmail-backfill/route.ts`, `createServerClient`, `n8n/conversations/route.ts`, `login/page.tsx`, `draft/route.ts`, `readJsonObjectWithLimit`, `timeseries.ts`?**
+  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+- **Why does `createServerClient()` connect `createServerClient` to `send_e2e.integration.ts`, `n8n/conversations/route.ts`, `result/route.ts`, `meta-credentials/route.ts`, `seed_demo_inbox.ts`, `webhook/route.ts`, `meta/callback/route.ts`, `draft/route.ts`, `wf2_tenant_contract.test.ts`, `approval/route.ts`, `callback/handler.ts`, `n8n-job-tokens.ts`, `inbound-events.ts`, `gmail-backfill/route.ts`, `api-security.ts`, `sync.ts`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `createServerClient()` (e.g. with `callback/handler.ts` and `gmail-sync/handler.ts`) actually correct?**
   _`createServerClient()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `next/core-web-vitals`, `next/typescript`, `dynamic` to the rest of the system?**
-  _1148 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1177 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `content.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08064516129032258 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08735632183908046 - nodes in this community are weakly interconnected._
 - **Should `employees.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.11097560975609756 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12280701754385964 - nodes in this community are weakly interconnected._

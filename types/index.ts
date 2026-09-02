@@ -243,6 +243,50 @@ export interface Employee {
   updated_at: string;
 }
 
+export const JOB_STATUSES = ["draft", "open", "closed"] as const;
+export type JobStatus = (typeof JOB_STATUSES)[number];
+
+export const REMOTE_POLICIES = [
+  "onsite",
+  "hybrid",
+  "remote",
+  "flexible",
+] as const;
+export type RemotePolicy = (typeof REMOTE_POLICIES)[number];
+
+export const SCORING_WEIGHT_KEYS = [
+  "technical_fit",
+  "experience_fit",
+  "seniority_fit",
+  "location_fit",
+  "nice_to_have",
+  "data_quality",
+] as const;
+export type ScoringWeightKey = (typeof SCORING_WEIGHT_KEYS)[number];
+export type ScoringWeights = Record<ScoringWeightKey, number>;
+
+/** A row from `jobs` (open roles). Soft-archive via `archived_at`. */
+export interface Job {
+  id: string;
+  team_id: string;
+  workspace_id: string | null;
+  title: string;
+  description: string | null;
+  status: JobStatus;
+  required_skills: string[];
+  preferred_skills: string[];
+  experience_min_years: number | null;
+  experience_max_years: number | null;
+  seniority: string | null;
+  location: string | null;
+  remote_policy: RemotePolicy | null;
+  scoring_weights: ScoringWeights;
+  scoring_weights_version: number;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

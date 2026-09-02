@@ -9,12 +9,16 @@ import type {
   DailyReport,
   Employee,
   EmploymentStatus,
+  Job,
+  JobStatus,
   Metrics,
   MetricsTimeseries,
   MetricsTimeseriesRange,
   NotificationPrefs,
+  RemotePolicy,
   ReplyDraft,
   ReplyDraftWithConversation,
+  ScoringWeights,
   WorkflowLogRow,
   WorkspaceSettings,
 } from "@/types";
@@ -427,4 +431,107 @@ export async function exportEmployeesCsv(): Promise<void> {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+// --- People jobs (open roles) -------------------------------------------------
+
+export const JOBS_PAGE_SIZE = 50;
+
+export type JobsListParams = {
+  q?: string | null;
+  status?: string | null;
+  includeArchived?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+export type JobsListResult = {
+  data: Job[];
+  count: number;
+};
+
+export type JobWriteBody = {
+  title?: string;
+  description?: string | null;
+  status?: JobStatus;
+  required_skills?: string[];
+  preferred_skills?: string[];
+  experience_min_years?: number | null;
+  experience_max_years?: number | null;
+  seniority?: string | null;
+  location?: string | null;
+  remote_policy?: RemotePolicy | null;
+  scoring_weights?: ScoringWeights;
+  archived?: boolean;
+};
+
+export async function jobsQuery(
+  params: JobsListParams = {},
+): Promise<JobsListResult> {
+  const search = new URLSearchParams();
+  const q = params.q?.trim();
+  if (q) search.set("q", q.slice(0, 200));
+  if (params.status) search.set("status", params.status);
+  if (params.includeArchived) search.set("include_archived", "true");
+  search.set("limit", String(params.limit ?? JOBS_PAGE_SIZE));
+  search.set("offset", String(params.offset ?? 0));
+
+  const res = await authenticatedFetch(`/api/people/jobs?${search.toString()}`);
+  const json = await readJson<{ data?: Job[]; count?: number; error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!Array.isArray(json.data)) {
+    throw new Error("Invalid jobs response");
+  }
+  return {
+    data: json.data,
+    count: typeof json.count === "number" ? json.count : json.data.length,
+  };
+}
+
+export async function jobQuery(id: string): Promise<Job> {
+  const res = await authenticatedFetch(
+    `/api/people/jobs/${encodeURIComponent(id)}`,
+  );
+  const json = await readJson<{ data?: Job; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid job response");
+  }
+  return json.data;
+}
+
+export async function createJobMutation(body: JobWriteBody): Promise<Job> {
+  const res = await authenticatedFetch("/api/people/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<{ data?: Job; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid job response");
+  }
+  return json.data;
+}
+
+export async function updateJobMutation(
+  id: string,
+  body: JobWriteBody,
+): Promise<Job> {
+  const res = await authenticatedFetch(
+    `/api/people/jobs/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: Job; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid job response");
+  }
+  return json.data;
 }

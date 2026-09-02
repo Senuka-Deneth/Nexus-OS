@@ -52,8 +52,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3. — 2026-09-02 — `lib/people/employee-csv.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`
   Done: 2026-09-02 — `lib/csv/serialize.ts`, `lib/csv/plan.ts`, `lib/people/employee-csv.ts`, `lib/people/employees.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/import/preview/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`, `components/people/EmployeesList.tsx`, `lib/queries/fetchers.ts`, `scripts/people_employees_csv.test.ts`
 
-- [ ] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2.  
-  Done:
+- [x] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2. — 2026-09-02 — `lib/people/jobs.ts`, `lib/people/scoring-weights.ts`, `app/api/people/jobs/route.ts`, `app/api/people/jobs/[id]/route.ts`, `components/people/JobForm.tsx`
+  Done: 2026-09-02 — `types/index.ts`, `lib/people/scoring-weights.ts`, `lib/people/jobs.ts`, `app/api/people/jobs/route.ts`, `app/api/people/jobs/[id]/route.ts`, `app/people/layout.tsx`, `app/people/jobs/page.tsx`, `app/people/jobs/new/page.tsx`, `app/people/jobs/[id]/page.tsx`, `components/people/PeopleSubnav.tsx`, `components/people/JobForm.tsx`, `components/people/JobsList.tsx`, `lib/queries/fetchers.ts`, `scripts/people_jobs_api.test.ts`
 
 - [ ] **C2** Candidate CRUD API + UI (no scores). Depends: A2.  
   Done:

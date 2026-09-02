@@ -59,4 +59,25 @@ export const queryKeys = {
 
   employee: (teamId: string | null, id: string) =>
     [...queryKeys.root(teamId), "employee", id] as const,
+
+  jobs: (
+    teamId: string | null,
+    q: string,
+    status: string,
+    includeArchived: boolean,
+    limit: number,
+    offset: number,
+  ) =>
+    [
+      ...queryKeys.root(teamId),
+      "jobs",
+      q,
+      status,
+      includeArchived,
+      limit,
+      offset,
+    ] as const,
+
+  job: (teamId: string | null, id: string) =>
+    [...queryKeys.root(teamId), "job", id] as const,
 } as const;
