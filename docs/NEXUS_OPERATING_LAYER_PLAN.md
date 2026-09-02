@@ -104,7 +104,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
   Done: 2026-09-02 — `supabase/migrations/20260902170000_chat_proposed_actions.sql`, `lib/chat/people-propose.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/api/chat/actions/route.ts`, `app/api/chat/actions/[id]/route.ts`, `app/chat/page.tsx`, `components/chat/ProposedActionCard.tsx`, `types/index.ts`, `scripts/chat_proposed_actions.test.ts`, `scripts/chat_proposed_actions_schema.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [x] **H1** CandidateSource adapter (interface only). Depends: C2. — 2026-09-02 — `lib/people/sources/*`, `lib/people/candidates.ts`, `scripts/people_candidate_source.test.ts`
   Done: 2026-09-02 — `lib/people/sources/`, `lib/people/candidates.ts`, `types/index.ts`, `scripts/people_candidate_source.test.ts`, `scripts/people_candidates_api.test.ts`, `package.json`
-- [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
+- [x] **H2** One consented external source (human-picked; not GitHub scrape-by-default). Depends: H1. — 2026-09-02 — `lib/people/from-source.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`
+  Done: 2026-09-02 — `lib/people/sources/github.ts`, `lib/people/from-source.ts`, `lib/people/candidate-jobs.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`, `scripts/people_from_source.test.ts`, `package.json`
 - [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
 - [ ] **J1** Embed People summaries only when a feature reads that `kind`
 - [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)

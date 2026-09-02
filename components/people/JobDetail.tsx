@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { ArrowLeft, Briefcase, Upload } from "lucide-react";
+import { ArrowLeft, Briefcase, Upload, UserPlus } from "lucide-react";
 import { ConfirmDialog } from "@/components/people/ConfirmDialog";
 import { CandidateCsvImport } from "@/components/people/CandidateCsvImport";
+import { CandidateGithubImport } from "@/components/people/CandidateGithubImport";
 import { JobCandidatesRank } from "@/components/people/JobCandidatesRank";
 import { JobForm } from "@/components/people/JobForm";
 import { JobStatusPill } from "@/components/people/JobStatusPill";
@@ -32,6 +33,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [githubOpen, setGithubOpen] = useState(false);
 
   const {
     data: job,
@@ -155,13 +157,17 @@ export function JobDetail({ jobId }: { jobId: string }) {
         </div>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           Review ranked candidates, edit role details and scoring weights, or
-          import more applicants from CSV.
+          import more applicants from CSV or a GitHub profile you picked.
         </p>
         {!archived ? (
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setImportOpen(true)}>
               <Upload className="h-4 w-4" aria-hidden />
               Import candidates
+            </Button>
+            <Button variant="secondary" onClick={() => setGithubOpen(true)}>
+              <UserPlus className="h-4 w-4" aria-hidden />
+              Add from GitHub
             </Button>
           </div>
         ) : null}
@@ -241,12 +247,20 @@ export function JobDetail({ jobId }: { jobId: string }) {
       ) : null}
 
       {!archived ? (
-        <CandidateCsvImport
-          open={importOpen}
-          onClose={() => setImportOpen(false)}
-          jobId={job.id}
-          jobTitle={job.title}
-        />
+        <>
+          <CandidateCsvImport
+            open={importOpen}
+            onClose={() => setImportOpen(false)}
+            jobId={job.id}
+            jobTitle={job.title}
+          />
+          <CandidateGithubImport
+            open={githubOpen}
+            onClose={() => setGithubOpen(false)}
+            jobId={job.id}
+            jobTitle={job.title}
+          />
+        </>
       ) : null}
     </div>
   );

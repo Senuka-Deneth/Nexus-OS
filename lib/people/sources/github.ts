@@ -17,8 +17,10 @@ import {
 } from "@/lib/people/sources/fields";
 import { parseSourceMetadata } from "@/lib/people/sources/metadata";
 
-export const GITHUB_FETCH_NOT_IMPLEMENTED =
-  "GitHub fetch is not implemented in H1";
+export const GITHUB_USERS_API = "https://api.github.com/users";
+export const GITHUB_FETCH_TIMEOUT_MS = 8_000;
+export const GITHUB_USER_AGENT = "Nexus-OS-people";
+export const GITHUB_API_VERSION = "2022-11-28";
 
 const GITHUB_LOGIN_MAX = 39;
 const GITHUB_LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
@@ -119,6 +121,63 @@ export function parseGithubRef(
   });
 }
 
+function usersApiUrl(login: string): string {
+  return `${GITHUB_USERS_API}/${encodeURIComponent(login)}`;
+}
+
+function isTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.name === "TimeoutError" || err.name === "AbortError";
+}
+
+export async function fetchGithubUser(
+  ref: SourceFetchRef,
+): Promise<SourceFetchResult> {
+  const login = ref.externalId.trim().toLowerCase();
+  if (!isGithubLogin(login)) {
+    return { ok: false, error: "Invalid GitHub username" };
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(usersApiUrl(login), {
+      method: "GET",
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": GITHUB_USER_AGENT,
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
+      },
+      signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (isTimeoutError(err)) {
+      return { ok: false, error: "GitHub request timed out" };
+    }
+    return { ok: false, error: "GitHub fetch failed" };
+  }
+
+  if (response.status === 404) {
+    return { ok: false, error: "GitHub user not found" };
+  }
+  if (response.status === 403) {
+    return { ok: false, error: "GitHub rate limited" };
+  }
+  if (!response.ok) {
+    return { ok: false, error: "GitHub fetch failed" };
+  }
+
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch {
+    return { ok: false, error: "GitHub fetch failed" };
+  }
+  if (!isRecord(raw)) {
+    return { ok: false, error: "GitHub fetch failed" };
+  }
+  return { ok: true, raw };
+}
+
 function parseGithubId(raw: unknown): SourceOk<number | null> | SourceErr {
   if (raw === undefined || raw === null) return sourceOk(null);
   if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 1) {
@@ -158,9 +217,7 @@ export const githubSource: CandidateSource = {
   label: "GitHub profile",
   defaultConsent: "unknown",
   parseRef: parseGithubRef,
-  async fetch(): Promise<SourceFetchResult> {
-    return { ok: false, error: GITHUB_FETCH_NOT_IMPLEMENTED };
-  },
+  fetch: fetchGithubUser,
   normalize(raw: unknown) {
     if (!isRecord(raw)) {
       return sourceFail("GitHub normalize expects a profile object");

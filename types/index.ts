@@ -294,6 +294,14 @@ export const CONSENT_STATUSES = [
 ] as const;
 export type ConsentStatus = (typeof CONSENT_STATUSES)[number];
 
+/** Consent values allowed when the founder pastes one GitHub profile (H2). */
+export const GITHUB_IMPORT_CONSENT_STATUSES = [
+  "owner_imported",
+  "unknown",
+] as const;
+export type GithubImportConsentStatus =
+  (typeof GITHUB_IMPORT_CONSENT_STATUSES)[number];
+
 /** Closed CandidateSource adapter ids (H1). Unknown ids fail closed. */
 export const CANDIDATE_SOURCE_IDS = ["manual", "csv", "github"] as const;
 export type CandidateSourceId = (typeof CANDIDATE_SOURCE_IDS)[number];

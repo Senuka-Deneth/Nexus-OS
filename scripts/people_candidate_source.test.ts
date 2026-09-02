@@ -1,5 +1,5 @@
 /**
- * Wave 2 H1 — CandidateSource adapter (pure; no DB, no network).
+ * Wave 2 H1/H2 — CandidateSource adapter (parse/normalize stay network-free).
  * Run: npx tsx scripts/people_candidate_source.test.ts
  *      (or `npm run test:people-candidate-source`)
  */
@@ -8,7 +8,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CANDIDATE_SOURCE_IDS,
-  GITHUB_FETCH_NOT_IMPLEMENTED,
+  GITHUB_USERS_API,
   SOURCE_METADATA_MAX_BYTES,
   csvSource,
   getCandidateSource,
@@ -36,16 +36,26 @@ function check(name: string, fn: () => void | Promise<void>): Promise<void> {
 const sourcesDir = join(process.cwd(), "lib/people/sources");
 
 (async () => {
-  await check("source modules stay pure (no server-only / next / fetch to GitHub)", () => {
+  await check("source modules stay free of server-only / Next; only github.ts may call Users API", () => {
     const files = readdirSync(sourcesDir).filter((name) => name.endsWith(".ts"));
     assert(files.length > 0, "sources dir has ts files");
     for (const name of files) {
       const src = readFileSync(join(sourcesDir, name), "utf8");
       assert(!/from ["']server-only["']/.test(src), `${name} must not import server-only`);
       assert(!/from ["']next\//.test(src), `${name} must not import Next.js`);
+      if (name === "github.ts") {
+        assert(
+          /api\.github\.com\/users/.test(src),
+          "github.ts must call the Users API",
+        );
+        assert(!/\/search\b/.test(src), "github.ts must not call search");
+        assert(!/\/followers\b/.test(src), "github.ts must not list followers");
+        assert(!/text\/html/.test(src), "github.ts must not scrape HTML");
+        continue;
+      }
       assert(
         !/api\.github\.com/.test(src),
-        `${name} must not call api.github.com in H1`,
+        `${name} must not call api.github.com`,
       );
     }
   });
@@ -199,14 +209,87 @@ const sourcesDir = join(process.cwd(), "lib/people/sources");
     assert(result.data.notes?.length === 300, "notes keep 300");
   });
 
-  await check("GitHub fetch is stubbed in H1", async () => {
-    assert(typeof githubSource.fetch === "function", "fetch present");
-    const result = await githubSource.fetch?.({
-      externalId: "octocat",
-      url: "https://github.com/octocat",
-    });
-    assert(result && result.ok === false, "fetch fails");
-    assert(result && result.error === GITHUB_FETCH_NOT_IMPLEMENTED, "message");
+  await check("GitHub fetch GETs /users/{login} only", async () => {
+    const calls: string[] = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
+      calls.push(url);
+      if (url.includes("/search") || url.includes("/followers")) {
+        throw new Error(`forbidden GitHub URL: ${url}`);
+      }
+      return new Response(
+        JSON.stringify({ login: "octocat", id: 1, name: "The Octocat" }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+    try {
+      const result = await githubSource.fetch?.({
+        externalId: "octocat",
+        url: "https://github.com/octocat",
+      });
+      assert(result && result.ok, "ok");
+      if (!result || !result.ok) return;
+      assert(calls.length === 1, "one call");
+      assert(calls[0] === `${GITHUB_USERS_API}/octocat`, "users url");
+      const raw = result.raw as { login?: unknown };
+      assert(raw.login === "octocat", "raw login");
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
+  await check("GitHub fetch maps 404 and 403", async () => {
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("{}", { status: 404 })) as typeof fetch;
+    try {
+      const missing = await githubSource.fetch?.({
+        externalId: "octocat",
+        url: "https://github.com/octocat",
+      });
+      assert(missing && !missing.ok, "404 fails");
+      assert(missing && missing.error === "GitHub user not found", "404 message");
+    } finally {
+      globalThis.fetch = orig;
+    }
+
+    globalThis.fetch = (async () =>
+      new Response("{}", { status: 403 })) as typeof fetch;
+    try {
+      const limited = await githubSource.fetch?.({
+        externalId: "octocat",
+        url: "https://github.com/octocat",
+      });
+      assert(limited && !limited.ok, "403 fails");
+      assert(limited && limited.error === "GitHub rate limited", "403 message");
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+
+  await check("GitHub fetch does not call the network for an invalid login", async () => {
+    let called = false;
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      called = true;
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    try {
+      const result = await githubSource.fetch?.({
+        externalId: "octocat/Hello-World",
+        url: "https://github.com/octocat/Hello-World",
+      });
+      assert(result && !result.ok, "invalid ref fails closed");
+      assert(!called, "no network");
+    } finally {
+      globalThis.fetch = orig;
+    }
   });
 
   await check("source_metadata rejects nested objects, arrays, and oversize payloads", () => {

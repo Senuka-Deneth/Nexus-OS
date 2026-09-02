@@ -11,6 +11,7 @@ import type {
   ConsentStatus,
   Employee,
   EmploymentStatus,
+  GithubImportConsentStatus,
   Job,
   JobStatus,
   CandidateJobStage,
@@ -861,6 +862,41 @@ export async function importCandidateCsv(
   if (!res.ok) throw new Error(errFrom(res, json));
   if (json.ok !== true) throw new Error(json.error ?? "CSV import failed");
   return json;
+}
+
+export type CandidateFromSourceBody = {
+  source: "github";
+  ref: string;
+  consent_status: GithubImportConsentStatus;
+  job_id?: string;
+};
+
+export type CandidateFromSourceResult = {
+  data: Candidate;
+  created: boolean;
+  attached: boolean;
+};
+
+export async function importCandidateFromSource(
+  body: CandidateFromSourceBody,
+): Promise<CandidateFromSourceResult> {
+  const res = await authenticatedFetch("/api/people/candidates/from-source", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<CandidateFromSourceResult & { error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid GitHub import response");
+  }
+  return {
+    data: json.data,
+    created: json.created === true,
+    attached: json.attached === true,
+  };
 }
 
 export const PEOPLE_EMAIL_PICKER_LIMIT = 100;

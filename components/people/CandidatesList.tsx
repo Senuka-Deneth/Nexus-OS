@@ -10,10 +10,12 @@ import {
   Plus,
   Search,
   Upload,
+  UserPlus,
   UserRound,
 } from "lucide-react";
 import { CandidateConsentPill } from "@/components/people/CandidateConsentPill";
 import { CandidateCsvImport } from "@/components/people/CandidateCsvImport";
+import { CandidateGithubImport } from "@/components/people/CandidateGithubImport";
 import { CONSENT_STATUS_LABELS } from "@/components/people/consent-labels";
 import { useTenantScope } from "@/components/tenant/TenantScope";
 import { Button } from "@/components/ui/Button";
@@ -44,6 +46,7 @@ export function CandidatesList() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [offset, setOffset] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
+  const [githubOpen, setGithubOpen] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -143,10 +146,18 @@ export function CandidatesList() {
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Founder-owned people you may hire. Sparse records are fine. Import
-            from CSV onto a job, or add candidates manually.
+            from CSV onto a job, add a public GitHub profile you picked, or add
+            candidates manually.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setGithubOpen(true)}
+          >
+            <UserPlus className="h-4 w-4" aria-hidden />
+            Add from GitHub
+          </Button>
           <Button
             variant="secondary"
             onClick={() => setImportOpen(true)}
@@ -359,6 +370,11 @@ export function CandidatesList() {
       <CandidateCsvImport
         open={importOpen}
         onClose={() => setImportOpen(false)}
+        jobs={importJobs}
+      />
+      <CandidateGithubImport
+        open={githubOpen}
+        onClose={() => setGithubOpen(false)}
         jobs={importJobs}
       />
     </div>

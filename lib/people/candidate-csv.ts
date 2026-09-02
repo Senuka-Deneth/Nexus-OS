@@ -19,6 +19,7 @@ import {
   updateCandidate,
   type CandidateErr,
 } from "@/lib/people/candidates";
+import { ensureCandidateJobLink } from "@/lib/people/candidate-jobs";
 import { enqueuePeopleMatchJob } from "@/lib/people/background-jobs";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import { getJob } from "@/lib/people/jobs";
@@ -154,50 +155,6 @@ function bodyFromPlannedRow(
     body[spec.name] = values[spec.name];
   }
   return body;
-}
-
-function isUniqueCandidateJobConflict(
-  error: { code?: string; message?: string } | null,
-): boolean {
-  if (!error) return false;
-  if (error.code === "23505") return true;
-  const message = error.message ?? "";
-  return message.includes("candidate_jobs") || message.includes("candidate_id");
-}
-
-async function ensureCandidateJobLink(
-  ctx: PeopleTenantContext,
-  candidateId: string,
-  jobId: string,
-): Promise<{ ok: true; attached: boolean } | CandidateErr> {
-  const { data: existing, error: lookupError } = await ctx.supabase
-    .from("candidate_jobs")
-    .select("id")
-    .eq("team_id", ctx.teamId)
-    .eq("candidate_id", candidateId)
-    .eq("job_id", jobId)
-    .maybeSingle();
-
-  if (lookupError) return fail(500, lookupError.message);
-  if (existing) return { ok: true, attached: false };
-
-  const { error } = await ctx.supabase.from("candidate_jobs").insert({
-    team_id: ctx.teamId,
-    workspace_id: ctx.workspaceId,
-    candidate_id: candidateId,
-    job_id: jobId,
-    stage: "new",
-    data_quality: "pending",
-  });
-
-  if (error) {
-    if (isUniqueCandidateJobConflict(error)) {
-      return { ok: true, attached: false };
-    }
-    return fail(500, error.message || "Failed to attach candidate to job");
-  }
-
-  return { ok: true, attached: true };
 }
 
 async function planForTenant(

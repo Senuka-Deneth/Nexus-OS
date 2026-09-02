@@ -1,6 +1,6 @@
 /**
- * H1 — CandidateSource adapter types (pure; no DB, no network).
- * H2 may add github.fetch; do not add search/list (that invites scrape).
+ * CandidateSource adapter types. github.fetch may call the Users API.
+ * Do not add search/list (that invites scrape).
  */
 
 import {
@@ -44,7 +44,7 @@ export type NormalizedCandidate = {
   source_metadata: SourceMetadata;
   consent_status: ConsentStatus;
   notes: string | null;
-  /** Adapter-scoped id for later H2 idempotency (GitHub login). Not a DB column. */
+  /** Adapter-scoped id for H2 idempotency (GitHub login). Not a DB column. */
   external_id: string | null;
 };
 

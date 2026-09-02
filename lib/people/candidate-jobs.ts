@@ -169,6 +169,50 @@ function fail(status: number, error: string): CandidateJobErr {
   return { ok: false, status, error };
 }
 
+function isUniqueCandidateJobConflict(
+  error: { code?: string; message?: string } | null,
+): boolean {
+  if (!error) return false;
+  if (error.code === "23505") return true;
+  const message = error.message ?? "";
+  return message.includes("candidate_jobs") || message.includes("candidate_id");
+}
+
+export async function ensureCandidateJobLink(
+  ctx: PeopleTenantContext,
+  candidateId: string,
+  jobId: string,
+): Promise<{ ok: true; attached: boolean } | CandidateJobErr> {
+  const { data: existing, error: lookupError } = await ctx.supabase
+    .from("candidate_jobs")
+    .select("id")
+    .eq("team_id", ctx.teamId)
+    .eq("candidate_id", candidateId)
+    .eq("job_id", jobId)
+    .maybeSingle();
+
+  if (lookupError) return fail(500, lookupError.message);
+  if (existing) return { ok: true, attached: false };
+
+  const { error } = await ctx.supabase.from("candidate_jobs").insert({
+    team_id: ctx.teamId,
+    workspace_id: ctx.workspaceId,
+    candidate_id: candidateId,
+    job_id: jobId,
+    stage: "new",
+    data_quality: "pending",
+  });
+
+  if (error) {
+    if (isUniqueCandidateJobConflict(error)) {
+      return { ok: true, attached: false };
+    }
+    return fail(500, error.message || "Failed to attach candidate to job");
+  }
+
+  return { ok: true, attached: true };
+}
+
 function unknownKeys(
   body: Record<string, unknown>,
   allowed: readonly string[],
