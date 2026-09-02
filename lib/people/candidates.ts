@@ -3,6 +3,11 @@ import "server-only";
 import { writeAuditEvent } from "@/lib/audit";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import {
+  isCandidateSourceId,
+  parseSourceMetadata,
+  type NormalizedCandidate,
+} from "@/lib/people/sources";
+import {
   CONSENT_STATUSES,
   type Candidate,
   type ConsentStatus,
@@ -488,18 +493,16 @@ export async function getCandidate(
   return { ok: true, data: data as Candidate };
 }
 
-export async function createCandidate(
+async function insertCandidate(
   ctx: PeopleTenantContext,
-  body: Record<string, unknown>,
+  fields: ParsedCreate,
+  sourceMetadata: Record<string, unknown>,
 ): Promise<CandidateOk<Candidate> | CandidateErr> {
-  const parsed = parseCreateBody(body);
-  if (isErr(parsed)) return parsed;
-
   const insert = {
     team_id: ctx.teamId,
     workspace_id: ctx.workspaceId,
-    source_metadata: {},
-    ...parsed.data,
+    source_metadata: sourceMetadata,
+    ...fields,
   };
 
   const { data, error } = await ctx.supabase
@@ -526,6 +529,57 @@ export async function createCandidate(
   if (!audit.ok) return fail(500, audit.error);
 
   return { ok: true, data: created };
+}
+
+function createBodyFromNormalized(
+  record: NormalizedCandidate,
+): Record<string, unknown> {
+  return {
+    full_name: record.full_name,
+    email: record.email,
+    phone: record.phone,
+    headline: record.headline,
+    current_role: record.current_role,
+    experience_years: record.experience_years,
+    skills: record.skills,
+    location: record.location,
+    source: record.source,
+    source_url: record.source_url,
+    consent_status: record.consent_status,
+    notes: record.notes,
+  };
+}
+
+/**
+ * Persist a CandidateSource-normalized record.
+ * HTTP create still rejects client-supplied source_metadata; this path is
+ * adapter-only (H2 GitHub import will call it after fetch + normalize).
+ */
+export async function persistNormalizedCandidate(
+  ctx: PeopleTenantContext,
+  record: NormalizedCandidate,
+): Promise<CandidateOk<Candidate> | CandidateErr> {
+  if (!isCandidateSourceId(record.source)) {
+    return fail(400, "Unknown candidate source");
+  }
+
+  const metadata = parseSourceMetadata(record.source_metadata);
+  if (!metadata.ok) return fail(400, metadata.error);
+
+  const parsed = parseCreateBody(createBodyFromNormalized(record));
+  if (isErr(parsed)) return parsed;
+
+  return insertCandidate(ctx, parsed.data, metadata.data);
+}
+
+export async function createCandidate(
+  ctx: PeopleTenantContext,
+  body: Record<string, unknown>,
+): Promise<CandidateOk<Candidate> | CandidateErr> {
+  const parsed = parseCreateBody(body);
+  if (isErr(parsed)) return parsed;
+
+  return insertCandidate(ctx, parsed.data, {});
 }
 
 export async function updateCandidate(

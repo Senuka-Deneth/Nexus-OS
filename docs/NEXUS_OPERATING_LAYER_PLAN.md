@@ -102,7 +102,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
   Done: 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_people_tools.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [x] **G3** Confirmation-gated People tools — 2026-09-02 — `lib/chat/people-propose.ts`, `app/api/chat/actions/route.ts`, `components/chat/ProposedActionCard.tsx`
   Done: 2026-09-02 — `supabase/migrations/20260902170000_chat_proposed_actions.sql`, `lib/chat/people-propose.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/api/chat/actions/route.ts`, `app/api/chat/actions/[id]/route.ts`, `app/chat/page.tsx`, `components/chat/ProposedActionCard.tsx`, `types/index.ts`, `scripts/chat_proposed_actions.test.ts`, `scripts/chat_proposed_actions_schema.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
-- [ ] **H1** CandidateSource adapter (interface only)
+- [x] **H1** CandidateSource adapter (interface only). Depends: C2. — 2026-09-02 — `lib/people/sources/*`, `lib/people/candidates.ts`, `scripts/people_candidate_source.test.ts`
+  Done: 2026-09-02 — `lib/people/sources/`, `lib/people/candidates.ts`, `types/index.ts`, `scripts/people_candidate_source.test.ts`, `scripts/people_candidates_api.test.ts`, `package.json`
 - [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
 - [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
 - [ ] **J1** Embed People summaries only when a feature reads that `kind`
@@ -930,6 +931,59 @@ Implement partition G3 only.
 Add propose_pipeline_stage and propose_employment_status to the existing Chat tool loop. Resolve by name like G2. Persist pending rows on chat_proposed_actions. Confirm/cancel via POST /api/chat/actions/[id] wrapping updateEmployee and updateCandidateJobPipeline. User text cannot confirm. No send_email, hire, or reject tool. No mini-router. No n8n.
 
 Extend scripts/chat_prompt_injection.test.ts. Add scripts/chat_proposed_actions.test.ts and schema tests.
+```
+
+---
+
+### H1 — CandidateSource adapter (interface only)
+
+**Goal:** Closed `CandidateSource` registry + normalize. Shape the interface for H2 (founder pastes one GitHub profile). No live fetch, no UI, no routes, no scrape.
+
+**Reuse:** `lib/people/candidates.ts` create/audit path; `candidates.source` / `source_url` / `source_metadata` / `consent_status`; CSV field names in `lib/csv/profiles.ts`. HTTP create must still reject `source_metadata`.
+
+**Out of scope:** `api.github.com`, Octokit, new env vars, Chat, n8n, scoring, CSV/manual behavior change, LinkedIn, search/list on the interface.
+
+**Verify:** `npm run test:people-candidate-source`, `npm run test:people-candidates`, `npm run lint`.
+
+**Prompt:**
+
+```text
+Implement partition H1 only.
+
+Closed CandidateSource adapter: ids manual | csv | github. Unknown ids fail closed. No search() or list() on the interface.
+
+normalize(raw) → NormalizedCandidate (canonical source id, bounded source_metadata, consent_status, external_id).
+optional parseRef for human-picked pull sources.
+optional fetch typed but not implemented for GitHub in H1.
+
+GitHub parseRef: github.com/{login} or bare login. Reject search, orgs, gists, owner/repo.
+GitHub normalize: Users API–shaped object, no network. full_name = name else login. Never invent email (noreply dropped). skills []. experience_years null. default consent unknown.
+
+persistNormalizedCandidate shares createCandidate insert/audit. POST /api/people/candidates still rejects source_metadata.
+
+No GitHub HTTP. No new API routes. No UI. Do not rewire CSV import.
+```
+
+---
+
+### H2 — One consented GitHub profile (do not run with H1)
+
+**Goal:** Founder pastes one GitHub URL/username; server fetches that public user; persist via H1. No search, no scrape, no LinkedIn.
+
+**Depends:** H1. Human ToS/consent review before live `api.github.com` calls.
+
+**Prompt:**
+
+```text
+Implement partition H2 only.
+
+github.fetch: GET https://api.github.com/users/{login} (User-Agent, application/vnd.github+json, timeout). Map through H1 normalize. 404 not found; 403 rate limited. Do not call search, list followers, or scrape HTML.
+
+POST /api/people/candidates/from-source with requireApiTenantContext + rateLimit: { source: "github", ref, consent_status, job_id? }. Server parses ref, fetches, persistNormalizedCandidate. Client cannot supply source_metadata.
+
+UI: one “Add from GitHub” field, explicit consent_status control. Never candidate_applied unless they applied. Optional job_id reuses C3 attach + enqueuePeopleMatchJob.
+
+No GitHub OAuth unless a human asks. No discovery browser.
 ```
 
 ---

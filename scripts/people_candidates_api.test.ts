@@ -6,6 +6,7 @@
  *  1. Create stamps team/workspace from context, never from the body.
  *  2. Sparse create (name only) succeeds; skills default []; consent owner_imported.
  *  3. Extra fields (team_id, match_score, source_metadata) are rejected with 400.
+ *  3b. persistNormalizedCandidate stores adapter source_metadata (HTTP still rejects it).
  *  4. Invalid consent_status / experience_years → 400; duplicate email → 409.
  *  5. List is team-scoped; archive hides unless include_archived and is audited.
  *  6. Unauthorized → 401; missing tenant → 403; missing id → 404.
@@ -312,6 +313,7 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
 (async () => {
   const collection = await import("@/app/api/people/candidates/route");
   const item = await import("@/app/api/people/candidates/[id]/route");
+  const { persistNormalizedCandidate } = await import("@/lib/people/candidates");
 
   await check("create stamps tenant; omitted consent is owner_imported", async () => {
     const res = await post(collection.POST, { full_name: "Ada Lovelace" });
@@ -420,6 +422,84 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       metaJson.error ?? "",
     );
     assert(candidatesTable.length === 0, "no write on source_metadata");
+  });
+
+  await check("persistNormalizedCandidate stores source_metadata; HTTP still rejects it", async () => {
+    const ctx = {
+      supabase: tenantSupabase(),
+      teamId: TEAM_ID,
+      workspaceId: WORKSPACE_ID,
+      user: { id: USER_ID },
+    };
+    const result = await persistNormalizedCandidate(ctx, {
+      full_name: "Mona Lisa",
+      email: null,
+      phone: null,
+      headline: null,
+      current_role: null,
+      experience_years: null,
+      skills: [],
+      location: null,
+      source: "github",
+      source_url: "https://github.com/octocat",
+      source_metadata: {
+        adapter: "github",
+        external_id: "octocat",
+        github_id: 1,
+      },
+      consent_status: "unknown",
+      notes: null,
+      external_id: "octocat",
+    });
+    assert(result.ok, "persist ok");
+    if (!result.ok) return;
+    assert(result.data.source === "github", "source");
+    assert(result.data.consent_status === "unknown", "consent");
+    assert(result.data.source_metadata.external_id === "octocat", "metadata");
+    assert(result.data.source_metadata.github_id === 1, "github_id");
+    assert(
+      auditEventsTable.some(
+        (e) =>
+          e.action === "create" &&
+          e.entity_type === "candidate" &&
+          e.entity_id === result.data.id,
+      ),
+      "create audited",
+    );
+
+    const http = await post(collection.POST, {
+      full_name: "Injected",
+      source_metadata: { scraped: true },
+    });
+    assert(http.status === 400, "HTTP still rejects source_metadata");
+    assert(candidatesTable.length === 1, "HTTP reject did not insert");
+  });
+
+  await check("persistNormalizedCandidate rejects nested source_metadata", async () => {
+    const ctx = {
+      supabase: tenantSupabase(),
+      teamId: TEAM_ID,
+      workspaceId: WORKSPACE_ID,
+      user: { id: USER_ID },
+    };
+    const result = await persistNormalizedCandidate(ctx, {
+      full_name: "Bad Meta",
+      email: null,
+      phone: null,
+      headline: null,
+      current_role: null,
+      experience_years: null,
+      skills: [],
+      location: null,
+      source: "github",
+      source_url: null,
+      source_metadata: { adapter: "github", extra: { nested: true } } as never,
+      consent_status: "unknown",
+      notes: null,
+      external_id: "octocat",
+    });
+    assert(!result.ok && result.status === 400, "nested metadata rejected");
+    assert(candidatesTable.length === 0, "no write");
   });
 
   await check("invalid consent_status and experience_years rejected", async () => {
