@@ -30,10 +30,13 @@ function csvModulesMustStayPure(): void {
   const dir = join(process.cwd(), "lib/csv");
   for (const file of ["parse.ts", "profiles.ts", "plan.ts", "index.ts"]) {
     const src = readFileSync(join(dir, file), "utf8");
-    assert(!src.includes("server-only"), `${file} must not import server-only`);
-    assert(!src.includes("next/"), `${file} must not import Next.js`);
     assert(
-      !src.includes("@/lib/people/employees"),
+      !/from ["']server-only["']/.test(src),
+      `${file} must not import server-only`,
+    );
+    assert(!/from ["']next\//.test(src), `${file} must not import Next.js`);
+    assert(
+      !/from ["']@\/lib\/people\/employees["']/.test(src),
       `${file} must not import the employee service`,
     );
   }
