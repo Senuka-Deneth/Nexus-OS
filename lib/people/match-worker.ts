@@ -12,6 +12,7 @@ import {
   setProgress,
   type BackgroundJob,
 } from "@/lib/people/background-jobs";
+import { embedApplicationSummaries } from "@/lib/people/embed";
 import {
   buildAiExplanationErrorPatch,
   buildAiExplanationPatch,
@@ -20,6 +21,7 @@ import {
   type ExplainCandidateContext,
   type ExplainJobContext,
 } from "@/lib/people/match-explanation";
+import type { ApplicationSummaryInput } from "@/lib/people/summaries";
 import {
   isScoreSufficient,
   scoreCandidate,
@@ -36,6 +38,7 @@ export const MAX_EXPLAINS_PER_INVOCATION = 25;
 
 type CandidateScoreRow = {
   id: string;
+  full_name: string | null;
   skills: unknown;
   experience_years: unknown;
   current_role: string | null;
@@ -47,11 +50,13 @@ type CandidateScoreRow = {
 type CandidateJobRow = {
   id: string;
   candidate_id: string;
+  stage: string | null;
 };
 
 type CandidateJobExplainRow = {
   id: string;
   candidate_id: string;
+  stage: string | null;
   match_score: unknown;
   match_components: unknown;
   match_weights_used: unknown;
@@ -239,6 +244,55 @@ function buildProgressSnapshot(input: PeopleMatchProgress): PeopleMatchProgress 
   return { ...input };
 }
 
+function evidenceNotes(components: unknown): string[] {
+  if (!Array.isArray(components)) return [];
+  const notes: string[] = [];
+  for (const item of components) {
+    if (!item || typeof item !== "object") continue;
+    const evidence = (item as { evidence?: unknown }).evidence;
+    if (!Array.isArray(evidence)) continue;
+    for (const ev of evidence) {
+      if (!ev || typeof ev !== "object") continue;
+      const note = (ev as { note?: unknown }).note;
+      if (typeof note === "string" && note.trim()) notes.push(note.trim());
+    }
+  }
+  return notes;
+}
+
+function explanationSummaryText(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  if ("error" in value) return null;
+  const summary = (value as { summary?: unknown }).summary;
+  return typeof summary === "string" && summary.trim() ? summary.trim() : null;
+}
+
+function applicationEmbedInput(params: {
+  candidateName: string;
+  jobTitle: string;
+  stage: string | null;
+  matchScore: unknown;
+  dataQuality: CandidateJobDataQuality | string | null;
+  insufficientReason: string | null;
+  matchComponents: unknown;
+  aiExplanation: unknown;
+}): ApplicationSummaryInput {
+  const matchScore =
+    typeof params.matchScore === "number" && Number.isFinite(params.matchScore)
+      ? params.matchScore
+      : null;
+  return {
+    candidateName: params.candidateName,
+    jobTitle: params.jobTitle,
+    stage: params.stage?.trim() || "new",
+    matchScore,
+    dataQuality: params.dataQuality,
+    insufficientReason: params.insufficientReason,
+    evidence: evidenceNotes(params.matchComponents),
+    explanationSummary: explanationSummaryText(params.aiExplanation),
+  };
+}
+
 async function runExplainPhase(
   supabase: SupabaseClient,
   job: BackgroundJob,
@@ -258,7 +312,7 @@ async function runExplainPhase(
     const { data: applicationRows, error: batchError } = await supabase
       .from("candidate_jobs")
       .select(
-        "id, candidate_id, match_score, match_components, match_weights_used, scoring_version, data_quality, insufficient_reason, ai_explanation",
+        "id, candidate_id, stage, match_score, match_components, match_weights_used, scoring_version, data_quality, insufficient_reason, ai_explanation",
       )
       .eq("job_id", targetJobId)
       .eq("team_id", teamId)
@@ -277,7 +331,7 @@ async function runExplainPhase(
     const { data: candidateRows, error: candidateError } = await supabase
       .from("candidates")
       .select(
-        'id, skills, experience_years, "current_role", headline, location, archived_at',
+        'id, full_name, skills, experience_years, "current_role", headline, location, archived_at',
       )
       .eq("team_id", teamId)
       .in("id", candidateIds);
@@ -293,6 +347,11 @@ async function runExplainPhase(
       ]),
     );
 
+    const pendingEmbeds: Array<{
+      sourceId: string;
+      input: ApplicationSummaryInput;
+    }> = [];
+
     for (const row of rows) {
       if (explainedThisInvocation >= explainCap) {
         yielded = true;
@@ -301,6 +360,22 @@ async function runExplainPhase(
 
       if (hasValidMatchExplanation(row.ai_explanation)) {
         progress.explain_skipped += 1;
+        const existing = candidateById.get(row.candidate_id);
+        if (existing && !existing.archived_at) {
+          pendingEmbeds.push({
+            sourceId: row.id,
+            input: applicationEmbedInput({
+              candidateName: existing.full_name?.trim() || "Candidate",
+              jobTitle: peopleJob.title?.trim() || "Job",
+              stage: row.stage,
+              matchScore: row.match_score,
+              dataQuality: row.data_quality,
+              insufficientReason: row.insufficient_reason,
+              matchComponents: row.match_components,
+              aiExplanation: row.ai_explanation,
+            }),
+          });
+        }
         continue;
       }
 
@@ -349,10 +424,30 @@ async function runExplainPhase(
       if (result.status === "success") progress.explained += 1;
       else progress.explain_failed += 1;
 
+      pendingEmbeds.push({
+        sourceId: row.id,
+        input: applicationEmbedInput({
+          candidateName: candidate.full_name?.trim() || "Candidate",
+          jobTitle: peopleJob.title?.trim() || "Job",
+          stage: row.stage,
+          matchScore: row.match_score,
+          dataQuality: row.data_quality,
+          insufficientReason: row.insufficient_reason,
+          matchComponents: row.match_components,
+          aiExplanation:
+            result.status === "success" ? result.explanation : row.ai_explanation,
+        }),
+      });
+
       explainedThisInvocation += 1;
       await refreshLock(supabase, job.id, job.lockedBy ?? undefined);
       await setProgress(supabase, job.id, buildProgressSnapshot(progress));
     }
+
+    await embedApplicationSummaries(
+      { supabase, teamId, workspaceId: job.workspaceId },
+      pendingEmbeds,
+    );
 
     if (yielded || rows.length < MATCH_BATCH_SIZE) break;
     offset += MATCH_BATCH_SIZE;
@@ -426,7 +521,7 @@ export async function handlePeopleMatch(
     while (true) {
       const { data: applicationRows, error: batchError } = await supabase
         .from("candidate_jobs")
-        .select("id, candidate_id")
+        .select("id, candidate_id, stage")
         .eq("job_id", targetJobId)
         .eq("team_id", teamId)
         .order("id", { ascending: true })
@@ -444,7 +539,7 @@ export async function handlePeopleMatch(
       const { data: candidateRows, error: candidateError } = await supabase
         .from("candidates")
         .select(
-          'id, skills, experience_years, "current_role", headline, location, archived_at',
+          'id, full_name, skills, experience_years, "current_role", headline, location, archived_at',
         )
         .eq("team_id", teamId)
         .in("id", candidateIds);
@@ -460,6 +555,11 @@ export async function handlePeopleMatch(
           candidate,
         ]),
       );
+
+      const pendingEmbeds: Array<{
+        sourceId: string;
+        input: ApplicationSummaryInput;
+      }> = [];
 
       for (const row of rows) {
         processed += 1;
@@ -489,7 +589,26 @@ export async function handlePeopleMatch(
 
         if (isScoreSufficient(result)) scored += 1;
         else insufficient += 1;
+
+        pendingEmbeds.push({
+          sourceId: row.id,
+          input: applicationEmbedInput({
+            candidateName: candidate.full_name?.trim() || "Candidate",
+            jobTitle: peopleJob.title?.trim() || "Job",
+            stage: row.stage,
+            matchScore: isScoreSufficient(result) ? result.score : null,
+            dataQuality: isScoreSufficient(result) ? "sufficient" : "insufficient",
+            insufficientReason: isScoreSufficient(result) ? null : result.reason,
+            matchComponents: isScoreSufficient(result) ? result.components : null,
+            aiExplanation: null,
+          }),
+        });
       }
+
+      await embedApplicationSummaries(
+        { supabase, teamId, workspaceId: job.workspaceId },
+        pendingEmbeds,
+      );
 
       progress = {
         ...progress,

@@ -2,7 +2,8 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { matchKnowledge, type KnowledgeChunk } from "@/lib/embeddings/store";
+import type { ChatLane } from "@/lib/chat/route-lane";
+import { matchKnowledge, type EmbeddingKind, type KnowledgeChunk } from "@/lib/embeddings/store";
 import {
   CANDIDATE_JOB_STAGES,
   EMPLOYMENT_STATUSES,
@@ -27,6 +28,7 @@ import {
  *
  * People (G1): compact roster / job / candidate stats plus open jobs and stage=`new`
  * applications awaiting review. Candidate names and job titles only — no emails, phones, or notes.
+ * J1: when `lane` is people/mixed, retrieval also includes `people_summary` embeddings.
  */
 
 // Terminal conversation statuses are excluded from "at risk" pipeline exposure.
@@ -588,6 +590,27 @@ function parseServices(value: unknown): string[] {
 }
 
 /**
+ * Lane-aware RAG kinds. Omitting `lane` in buildAnalystContext keeps the default
+ * (no people_summary) so n8n and older callers cannot pull People embeddings.
+ */
+export function knowledgeKindsForLane(lane: ChatLane): EmbeddingKind[] {
+  switch (lane) {
+    case "people":
+      return ["business_doc", "summary", "people_summary"];
+    case "mixed":
+      return ["business_doc", "summary", "conversation", "people_summary"];
+    case "revenue":
+      return ["business_doc", "summary", "conversation"];
+    case "smalltalk":
+      return ["business_doc", "summary"];
+    default: {
+      const _exhaustive: never = lane;
+      return _exhaustive;
+    }
+  }
+}
+
+/**
  * Build the full analyst context (snapshot + business profile) for a tenant.
  *
  * READ-ONLY: only SELECTs, every one scoped by `team_id`. The passed `supabase` client is the
@@ -599,8 +622,10 @@ export async function buildAnalystContext(params: {
   teamId: string;
   /** The founder's current message — embedded to retrieve relevant knowledge-base chunks. */
   queryText?: string;
+  /** I1 lane. When set, retrieval includes people_summary only on people/mixed. */
+  lane?: ChatLane;
 }): Promise<AnalystContext> {
-  const { supabase, teamId, queryText } = params;
+  const { supabase, teamId, queryText, lane } = params;
   const generatedAt = new Date().toISOString();
 
   const [
@@ -694,8 +719,14 @@ export async function buildAnalystContext(params: {
 
   // Retrieve knowledge-base chunks relevant to the query. Best-effort: matchKnowledge swallows
   // its own errors and returns [] (missing RPC, no OPENAI key, fake test client, etc.).
+  // Lane-aware kinds: people_summary is only requested when the caller passes a people/mixed lane.
   const knowledge = queryText
-    ? await matchKnowledge({ supabase, teamId, queryText })
+    ? await matchKnowledge({
+        supabase,
+        teamId,
+        queryText,
+        ...(lane !== undefined ? { kinds: knowledgeKindsForLane(lane) } : {}),
+      })
     : [];
 
   return { snapshot, business, knowledge };

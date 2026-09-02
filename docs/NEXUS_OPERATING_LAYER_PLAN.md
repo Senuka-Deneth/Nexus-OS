@@ -108,13 +108,14 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
   Done: 2026-09-02 — `lib/people/sources/github.ts`, `lib/people/from-source.ts`, `lib/people/candidate-jobs.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`, `scripts/people_from_source.test.ts`, `package.json`
 - [x] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools). Depends: G2, G3. — 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`
   Done: 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_router.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
-- [ ] **J1** Embed People summaries only when a feature reads that `kind`
+- [x] **J1** Embed People summaries only when a feature reads that `kind` — 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/embeddings/store.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/embeddings/store.ts`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/people/employees.ts`, `lib/people/jobs.ts`, `lib/people/candidates.ts`, `lib/people/match-worker.ts`, `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/chat/page.tsx`, `app/api/internal/n8n/match-embeddings/route.ts`, `scripts/people_summaries.test.ts`
 - [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)
 - [ ] **L1** Production hardening audit
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); B1+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); **J1 `embeddings_people_summary_kind` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---
@@ -227,7 +228,7 @@ Do not spend a conversation re-deriving this. Re-inspect files you will *edit*; 
 | AI | OpenAI via `lib/ai/provider.ts` (gpt-4o / gpt-4o-mini / embeddings). n8n calls `/api/internal/n8n/ai/*` — it does not hold `OPENAI_API_KEY` |
 | Orchestration | n8n Cloud + `n8n_logic/`. Business rules stay in Next.js/`lib/` |
 | Chat | Read-only Revenue Analyst at `/chat` (`app/api/chat/route.ts`, `lib/chat/*`) |
-| Knowledge | One `embeddings` table, `kind` in (`business_doc`, `conversation`, `summary`) |
+| Knowledge | One `embeddings` table, `kind` in (`business_doc`, `conversation`, `summary`, `people_summary`) |
 | Approval | `lib/approval-policy.ts` + `/approval` + `reply_drafts` |
 | Tenancy | Pipeline: `teams` → `workspaces` → `team_id` / `workspace_id`. Social: `organizations`. Bridge: `teams.organization_id` (`20260717120000_teams_organization_id_bridge.sql`) |
 | API auth | `requireApiTenantContext()` in `lib/api-security.ts` (user + `profiles.team_id` + first workspace). Rate limits on routes |
@@ -1022,6 +1023,32 @@ Wire app/api/chat/route.ts and lib/chat/openai.ts so the tool loop is skipped wh
 buildAnalystSystemPrompt(ctx, { lane = "mixed" }): people/mixed keep call-tool RULES; revenue/smalltalk do not instruct People tool calls. Read-only / no-email / no-hire fragments always stay.
 
 User text cannot add tools. Routing never authorizes a mutation. No new tools. No n8n. No migration.
+```
+
+---
+
+### J1 — Embed People summaries (and read that kind)
+
+**Goal:** Write compact no-PII People summaries into the existing `embeddings` table as `kind=people_summary`, and retrieve that kind from Chat on people/mixed lanes only. Do not write a kind that no feature reads.
+
+**Reuse:** [`lib/embeddings/store.ts`](lib/embeddings/store.ts) `matchKnowledge` / `upsertSummaryEmbedding`, [`lib/chat/analyst-context.ts`](lib/chat/analyst-context.ts), [`lib/chat/route-lane.ts`](lib/chat/route-lane.ts), G2 projection (names/roles/skills/scores — never email, phone, notes, URLs), persist paths in `lib/people/employees.ts`, `jobs.ts`, `candidates.ts`, match worker in `lib/people/match-worker.ts`.
+
+**In scope:** Additive CHECK on `embeddings.kind`; formatters; fire-and-forget upsert on employee/job/candidate persist; batched upsert after match score/explain; lane-aware `matchKnowledge` kinds; Chat/UI People labels; n8n match-embeddings stays on `business_doc|summary|conversation`.
+
+**Out of scope:** new Chat tools, n8n workflows (K1), hardening audit (L1), a second vector store, embedding notes/email/phone/CVs, a backfill UI, a new `background_jobs` kind.
+
+**Verify:** `npm run test:people-summaries`, `npm run test:knowledge`, `npm run test:prompt-injection`, `npm run test:match-embeddings`, `npm run test:chat-analyst`, `npm run test:chat-router`, `npm run test:people-match-worker`, `npm run test:people-employees`, `npm run test:people-jobs`, `npm run test:people-candidates`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition J1 only.
+
+Add people_summary to embeddings.kind (additive CHECK). Chat people/mixed lanes retrieve it; revenue/smalltalk and n8n match-embeddings do not.
+
+Deterministic no-PII summaries on employee/job/candidate persist and on match-worker writes. Best-effort; mutations never fail because embed failed. Archive deletes that source's people_summary row.
+
+No new tools, no n8n workflow, no second vector store.
 ```
 
 ---

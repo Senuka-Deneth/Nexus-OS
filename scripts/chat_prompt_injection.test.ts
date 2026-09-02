@@ -23,6 +23,7 @@
  *   9. People propose-tool schema is the two G3 names; send_email is absent.
  *  10. Revenue/smalltalk lanes do not instruct the model to call People tools.
  *  11. Tool names in user text cannot flip a revenue question onto the people lane.
+ *  12. people/mixed retrieval requests people_summary; revenue/smalltalk do not.
  * If any of these fail, hostile customer text has a path to rewrite the
  * analyst's ground rules — treat as a release blocker.
  */
@@ -76,7 +77,7 @@ const HOSTILE_CANDIDATE_NAME =
 
 (async () => {
   const { buildAnalystSystemPrompt } = await import("@/lib/chat/system-prompt");
-  const { emptyPeopleSnapshot } = await import("@/lib/chat/analyst-context");
+  const { emptyPeopleSnapshot, knowledgeKindsForLane } = await import("@/lib/chat/analyst-context");
   const { matchKnowledge } = await import("@/lib/embeddings/store");
   const { PEOPLE_READ_TOOLS, PEOPLE_READ_TOOL_NAMES } = await import(
     "@/lib/chat/people-tools"
@@ -347,7 +348,102 @@ const HOSTILE_CANDIDATE_NAME =
     });
   })();
 
-  console.log(`\nchat_prompt_injection: ${passed}/12 checks passed`);
+  check("people and mixed lanes request people_summary; revenue and smalltalk do not", () => {
+    const people = knowledgeKindsForLane("people");
+    const mixed = knowledgeKindsForLane("mixed");
+    const revenue = knowledgeKindsForLane("revenue");
+    const smalltalk = knowledgeKindsForLane("smalltalk");
+    assert(people.includes("people_summary"), "people includes people_summary");
+    assert(mixed.includes("people_summary"), "mixed includes people_summary");
+    assert(!people.includes("conversation"), "people lane skips inbox conversation");
+    assert(!revenue.includes("people_summary"), "revenue excludes people_summary");
+    assert(!smalltalk.includes("people_summary"), "smalltalk excludes people_summary");
+  });
+
+  await (async () => {
+    rpcCalls.length = 0;
+    const fakeSupabase = {
+      rpc(name: string, params: Record<string, unknown>) {
+        rpcCalls.push({ name, params });
+        return Promise.resolve({ data: [], error: null });
+      },
+    } as never;
+    await matchKnowledge({
+      supabase: fakeSupabase,
+      teamId: "team-A",
+      queryText: "who is on the roster",
+      kinds: knowledgeKindsForLane("people"),
+    });
+    check("people-lane retrieval p_kinds includes people_summary", () => {
+      const call = rpcCalls.find((c) => c.name === "match_embeddings");
+      assert(!!call, "match_embeddings called");
+      const kinds = call!.params.p_kinds;
+      assert(Array.isArray(kinds) && kinds.includes("people_summary"), "p_kinds has people_summary");
+    });
+  })();
+
+  await (async () => {
+    rpcCalls.length = 0;
+    const fakeSupabase = {
+      rpc(name: string, params: Record<string, unknown>) {
+        rpcCalls.push({ name, params });
+        return Promise.resolve({ data: [], error: null });
+      },
+    } as never;
+    await matchKnowledge({
+      supabase: fakeSupabase,
+      teamId: "team-A",
+      queryText: "what did customer X ask?",
+      kinds: knowledgeKindsForLane("revenue"),
+    });
+    check("revenue-lane retrieval p_kinds excludes people_summary", () => {
+      const call = rpcCalls.find((c) => c.name === "match_embeddings");
+      assert(!!call, "match_embeddings called");
+      const kinds = call!.params.p_kinds as unknown;
+      assert(Array.isArray(kinds) && !kinds.includes("people_summary"), "no people_summary");
+    });
+  })();
+
+  check("hostile People knowledge chunk stays after RULES", () => {
+    const prompt = buildAnalystSystemPrompt({
+      snapshot: emptySnapshot,
+      business,
+      knowledge: [
+        {
+          content: HOSTILE_PEOPLE_CHUNK,
+          kind: "people_summary",
+          similarity: 0.99,
+        },
+      ],
+    });
+    const rulesAt = prompt.indexOf("RULES:");
+    const kbAt = prompt.indexOf("KNOWLEDGE BASE");
+    const hostileAt = prompt.indexOf(HOSTILE_PEOPLE_CHUNK);
+    assert(rulesAt >= 0 && kbAt > rulesAt, "RULES before KNOWLEDGE BASE");
+    assert(hostileAt > kbAt, "hostile People chunk is inside knowledge, not before RULES");
+    assert(prompt.includes("(People)"), "people_summary labeled People");
+  });
+
+  check("people-lane RULES mention People knowledge; revenue does not", () => {
+    const peoplePrompt = buildAnalystSystemPrompt(
+      { snapshot: emptySnapshot, business, knowledge: [] },
+      { lane: "people" },
+    );
+    const revenuePrompt = buildAnalystSystemPrompt(
+      { snapshot: emptySnapshot, business, knowledge: [] },
+      { lane: "revenue" },
+    );
+    assert(
+      peoplePrompt.includes("KNOWLEDGE BASE entries labeled People"),
+      "people lane has People RAG rule",
+    );
+    assert(
+      !revenuePrompt.includes("KNOWLEDGE BASE entries labeled People"),
+      "revenue lane has no People RAG rule",
+    );
+  });
+
+  console.log(`\nchat_prompt_injection: ${passed}/17 checks passed`);
 })().catch((e) => {
   console.error("FAIL:", e instanceof Error ? e.message : e);
   process.exit(1);

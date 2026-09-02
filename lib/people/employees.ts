@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { writeAuditEvent } from "@/lib/audit";
+import { scheduleEmployeeSummaryEmbed } from "@/lib/people/embed";
 import {
   EMPLOYMENT_STATUSES,
   type Employee,
@@ -473,6 +474,7 @@ export async function createEmployee(
   });
   if (!audit.ok) return fail(500, audit.error);
 
+  scheduleEmployeeSummaryEmbed(ctx, created);
   return { ok: true, data: created };
 }
 
@@ -533,6 +535,7 @@ export async function updateEmployee(
     if (!audit.ok) return fail(500, audit.error);
   }
 
+  if (changed) scheduleEmployeeSummaryEmbed(ctx, updated);
   return { ok: true, data: updated };
 }
 

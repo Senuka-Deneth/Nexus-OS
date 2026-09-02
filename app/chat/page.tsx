@@ -26,6 +26,7 @@ const SOURCE_KIND_LABEL: Record<string, string> = {
   business_doc: "Document",
   summary: "Summary",
   conversation: "Inbox",
+  people_summary: "People",
 };
 
 function decodeSourcesHeader(value: string | null): KnowledgeSource[] {

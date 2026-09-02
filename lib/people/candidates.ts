@@ -1,6 +1,7 @@
 import "server-only";
 
 import { writeAuditEvent } from "@/lib/audit";
+import { scheduleCandidateSummaryEmbed } from "@/lib/people/embed";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import {
   isCandidateSourceId,
@@ -528,6 +529,7 @@ async function insertCandidate(
   });
   if (!audit.ok) return fail(500, audit.error);
 
+  scheduleCandidateSummaryEmbed(ctx, created);
   return { ok: true, data: created };
 }
 
@@ -639,6 +641,7 @@ export async function updateCandidate(
     if (!audit.ok) return fail(500, audit.error);
   }
 
+  if (changed) scheduleCandidateSummaryEmbed(ctx, updated);
   return { ok: true, data: updated };
 }
 

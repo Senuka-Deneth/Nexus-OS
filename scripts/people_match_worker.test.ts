@@ -48,6 +48,7 @@ const tables: Record<string, Row[]> = {
   candidates: [],
   candidate_jobs: [],
   audit_events: [],
+  embeddings: [],
 };
 
 function resetTables(): void {
@@ -162,7 +163,8 @@ function seedBackgroundJob(overrides: Partial<Row> = {}): Row {
 function makeServiceClient() {
   return {
     from(table: string) {
-      const store = tables[table] ?? [];
+      if (!tables[table]) tables[table] = [];
+      const store = tables[table];
       const filters: Array<(r: Row) => boolean> = [];
       let insertRow: Row | null = null;
       let updatePatch: Row | null = null;
@@ -173,6 +175,7 @@ function makeServiceClient() {
       let rangeFrom: number | null = null;
       let rangeTo: number | null = null;
       let isSingle = false;
+      let isDelete = false;
 
       const applyFilters = () => store.filter((r) => filters.every((f) => f(r)));
 
@@ -199,6 +202,13 @@ function makeServiceClient() {
         }
         Object.assign(hit, updatePatch, { updated_at: new Date().toISOString() });
         return { data: { ...hit }, error: null };
+      };
+
+      const finishDelete = () => {
+        for (let i = store.length - 1; i >= 0; i -= 1) {
+          if (filters.every((f) => f(store[i]))) store.splice(i, 1);
+        }
+        return { data: null, error: null };
       };
 
       const finishSelect = () => {
@@ -239,6 +249,10 @@ function makeServiceClient() {
           updatePatch = { ...patch };
           return chain;
         },
+        delete() {
+          isDelete = true;
+          return chain;
+        },
         eq(col: string, val: unknown) {
           filters.push((r) => r[col] === val);
           return chain;
@@ -261,12 +275,14 @@ function makeServiceClient() {
         },
         maybeSingle() {
           isSingle = true;
+          if (isDelete) return Promise.resolve(finishDelete());
           if (insertRow) return Promise.resolve(finishInsert());
           if (updatePatch) return Promise.resolve(finishUpdate());
           return finishSelect();
         },
         single() {
           isSingle = true;
+          if (isDelete) return Promise.resolve(finishDelete());
           if (insertRow) return Promise.resolve(finishInsert());
           if (updatePatch) return Promise.resolve(finishUpdate());
           return finishSelect();
@@ -275,6 +291,9 @@ function makeServiceClient() {
           resolve: (v: unknown) => unknown,
           reject?: (e: unknown) => unknown,
         ) {
+          if (isDelete) {
+            return Promise.resolve(finishDelete()).then(resolve, reject);
+          }
           if (insertRow) {
             return Promise.resolve(finishInsert()).then(resolve, reject);
           }
@@ -408,6 +427,11 @@ const scoringVersionSql = readFileSync(
     assert(progress.explained === 1, "progress explained");
     assert(progress.scoring_version === SCORING_VERSION, "progress scoring_version");
     assert(progress.scoring_weights_version === 1, "progress weights version");
+    const peopleEmbeds = tables.embeddings.filter((r) => r.kind === "people_summary");
+    assert(peopleEmbeds.length > 0, "people_summary embedding written");
+    const embedText = String(peopleEmbeds[peopleEmbeds.length - 1].content);
+    assert(embedText.includes("Alex Dev"), "embed includes candidate name");
+    assert(!embedText.includes("alex@example.com"), "embed omits email");
   });
 
   await check("handlePeopleMatch writes insufficient with null score", async () => {

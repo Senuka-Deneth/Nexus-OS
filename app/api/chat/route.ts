@@ -236,7 +236,12 @@ export async function POST(request: Request) {
   let systemPrompt: string;
   let sourcesHeader = "";
   try {
-    const context = await buildAnalystContext({ supabase, teamId, queryText: message });
+    const context = await buildAnalystContext({
+      supabase,
+      teamId,
+      queryText: message,
+      lane,
+    });
     systemPrompt = buildAnalystSystemPrompt(context, { lane });
     // Citation metadata for the UI: retrieval happens before streaming, so the
     // sources ride along as a base64url JSON response header the client can

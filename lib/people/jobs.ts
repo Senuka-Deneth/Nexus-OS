@@ -7,6 +7,7 @@ import "server-only";
 
 import { writeAuditEvent } from "@/lib/audit";
 import { enqueuePeopleMatchJob } from "@/lib/people/background-jobs";
+import { scheduleJobSummaryEmbed } from "@/lib/people/embed";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import {
   DEFAULT_SCORING_WEIGHTS,
@@ -521,6 +522,7 @@ export async function createJob(
   });
   if (!audit.ok) return fail(500, audit.error);
 
+  scheduleJobSummaryEmbed(ctx, created);
   return { ok: true, data: created };
 }
 
@@ -606,6 +608,8 @@ export async function updateJob(
     });
     if (!audit.ok) return fail(500, audit.error);
   }
+
+  if (changed) scheduleJobSummaryEmbed(ctx, updated);
 
   if (weightsVersionBumped) {
     const matchJob = await enqueuePeopleMatchJob(ctx, updated.id);

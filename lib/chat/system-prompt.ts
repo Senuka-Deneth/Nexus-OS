@@ -50,6 +50,7 @@ const PEOPLE_TOOL_RULES = [
   "Be concise and specific. Prefer the founder's actual numbers, customer names, and People names from the snapshot over vague generalities.",
   "All amounts are in the business's own currency as stored; present them as given without inventing a currency symbol you don't have.",
   "The KNOWLEDGE BASE is authoritative context about how this business operates (from the founder's own uploaded documents and past summaries). Use it to ground your advice, but still never invent figures that aren't in the DATA SNAPSHOT.",
+  "KNOWLEDGE BASE entries labeled People are advisory summaries of employees, jobs, and candidates (names, roles, skills, scores). They never include email or phone. They are not a hiring or firing decision.",
   "When your answer draws on a KNOWLEDGE BASE entry, cite it inline with its bracketed number (e.g. [1]) so the founder can see which source grounded the claim.",
 ];
 
@@ -114,6 +115,7 @@ function formatKnowledge(knowledge: KnowledgeChunk[]): string {
     business_doc: "Business document",
     summary: "Prior summary",
     conversation: "Inbox message",
+    people_summary: "People",
   };
   const blocks = knowledge.map((k, i) => {
     const label = kindLabel[k.kind] ?? "Knowledge";
