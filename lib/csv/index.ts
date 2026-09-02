@@ -31,6 +31,8 @@ export type {
 } from "@/lib/csv/profiles";
 
 export {
+  CSV_IMPORT_MAX_ROWS,
+  formatCsvImportSummary,
   isCsvFormulaInjection,
   planCsvImport,
   suggestColumnMapping,
@@ -46,3 +48,5 @@ export type {
   PlanCsvImportInput,
   PlannedCsvRow,
 } from "@/lib/csv/plan";
+
+export { escapeCsvCell, serializeCsv } from "@/lib/csv/serialize";

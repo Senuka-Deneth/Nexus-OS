@@ -9,9 +9,11 @@ import {
   CSV_DEFAULT_MAX_BYTES,
   CSV_FIELD_LIMITS,
   detectDelimiter,
+  escapeCsvCell,
   isCsvFormulaInjection,
   parseCsv,
   planCsvImport,
+  serializeCsv,
   suggestColumnMapping,
 } from "@/lib/csv";
 
@@ -28,7 +30,7 @@ function check(name: string, fn: () => void): void {
 
 function csvModulesMustStayPure(): void {
   const dir = join(process.cwd(), "lib/csv");
-  for (const file of ["parse.ts", "profiles.ts", "plan.ts", "index.ts"]) {
+  for (const file of ["parse.ts", "profiles.ts", "plan.ts", "serialize.ts", "index.ts"]) {
     const src = readFileSync(join(dir, file), "utf8");
     assert(
       !/from ["']server-only["']/.test(src),
@@ -327,6 +329,52 @@ check("duplicate then valid uses the first valid row as identity", () => {
   assert(plan.rows[0].action === "failed", "empty name failed");
   assert(plan.rows[1].action === "imported", "first valid imported");
   assert(plan.rows[2].action === "duplicate", "later duplicate");
+});
+
+check("maxRows over-cap is a file error", () => {
+  const plan = planCsvImport({
+    profile: "employee",
+    maxRows: 2,
+    text:
+      "full_name,email\n" +
+      "Ada Lovelace,ada@example.com\n" +
+      "Grace Hopper,grace@example.com\n" +
+      "Alan Turing,alan@example.com\n",
+  });
+  assert(!plan.ok, "must fail");
+  if (plan.ok) return;
+  assert(/row limit/.test(plan.error), `error was ${plan.error}`);
+});
+
+check("maxRows equal to data-row count is allowed", () => {
+  const plan = planCsvImport({
+    profile: "employee",
+    maxRows: 2,
+    text:
+      "full_name,email\nAda Lovelace,ada@example.com\nGrace Hopper,grace@example.com\n",
+  });
+  assert(plan.ok, "plan should succeed");
+  if (!plan.ok) return;
+  assert(plan.summary.imported === 2, "both imported");
+});
+
+check("serializeCsv quotes commas and doubles internal quotes", () => {
+  const csv = serializeCsv(
+    ["full_name", "notes"],
+    [["Lovelace, Ada", 'He said "hello"']],
+  );
+  assert(
+    csv === 'full_name,notes\r\n"Lovelace, Ada","He said ""hello"""\r\n',
+    `got ${JSON.stringify(csv)}`,
+  );
+});
+
+check("serializeCsv formula-escapes =CMD and @SUM; leaves +phone", () => {
+  assert(escapeCsvCell("=CMD") === `"'=CMD"`, "=CMD prefixed");
+  assert(escapeCsvCell("@SUM(1)") === `"'@SUM(1)"`, "@SUM prefixed");
+  assert(escapeCsvCell("+CMD") === `"'+CMD"`, "+CMD prefixed and quoted");
+  assert(escapeCsvCell("+94771234567") === "+94771234567", "phone unescaped");
+  assert(escapeCsvCell("Ada") === "Ada", "plain text");
 });
 
 check("empty data rows are skipped and do not shift spreadsheet row numbers", () => {

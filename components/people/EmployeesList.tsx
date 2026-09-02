@@ -7,10 +7,13 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Plus,
   Search,
+  Upload,
   UserRound,
 } from "lucide-react";
+import { EmployeeCsvImport } from "@/components/people/EmployeeCsvImport";
 import { EmployeeStatusPill } from "@/components/people/EmployeeStatusPill";
 import { EMPLOYMENT_STATUS_LABELS } from "@/components/people/status-labels";
 import { useTenantScope } from "@/components/tenant/TenantScope";
@@ -21,6 +24,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import {
   EMPLOYEES_PAGE_SIZE,
   employeesQuery,
+  exportEmployeesCsv,
 } from "@/lib/queries/fetchers";
 import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
@@ -52,6 +56,9 @@ export function EmployeesList() {
   const [statusFilter, setStatusFilter] = useState<EmploymentStatus | "">("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -100,6 +107,18 @@ export function EmployeesList() {
     setStatusFilter(next);
   }
 
+  async function onExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportEmployeesCsv();
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (tenant.loading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-muted">
@@ -136,16 +155,36 @@ export function EmployeesList() {
       <header className="flex flex-col gap-4 hairline-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="nexus-meta text-nexus-approval">People</p>
-            <h1 className="mt-3 nexus-app-title text-balance text-atmospheric-grey">Employees</h1>
+          <h1 className="mt-3 nexus-app-title text-balance text-atmospheric-grey">Employees</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Company roster for this workspace. Workspace invites stay under Team.
           </p>
         </div>
-        <Button onClick={() => router.push("/people/new")}>
-          <Plus className="h-4 w-4" aria-hidden />
-          Add employee
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" aria-hidden />
+            Import CSV
+          </Button>
+          <Button variant="secondary" onClick={() => void onExport()} disabled={exporting}>
+            {exporting ? (
+              <Spinner className="h-4 w-4" label="Exporting" />
+            ) : (
+              <Download className="h-4 w-4" aria-hidden />
+            )}
+            Export CSV
+          </Button>
+          <Button onClick={() => router.push("/people/new")}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add employee
+          </Button>
+        </div>
       </header>
+
+      {exportError ? (
+        <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">
+          Could not export employees: {exportError}
+        </p>
+      ) : null}
 
       {errorMsg && rows.length > 0 ? (
         <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">
@@ -217,7 +256,11 @@ export function EmployeesList() {
             icon={<UserRound />}
           />
           {!filtersActive ? (
-            <div className="flex justify-center">
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4" aria-hidden />
+                Import CSV
+              </Button>
               <Button onClick={() => router.push("/people/new")}>
                 <Plus className="h-4 w-4" aria-hidden />
                 Add employee
@@ -335,6 +378,8 @@ export function EmployeesList() {
           </div>
         </div>
       )}
+
+      <EmployeeCsvImport open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }

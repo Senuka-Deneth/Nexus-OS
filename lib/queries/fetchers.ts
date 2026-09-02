@@ -1,5 +1,9 @@
 import { authenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import type {
+  CsvColumnMapping,
+  CsvImportPlan,
+} from "@/lib/csv";
+import type {
   AiUsageSummary,
   Conversation,
   DailyReport,
@@ -361,4 +365,66 @@ export async function updateEmployeeMutation(
     throw new Error("Invalid employee response");
   }
   return json.data;
+}
+
+export type EmployeeCsvImportBody = {
+  csv: string;
+  mapping?: CsvColumnMapping;
+};
+
+export type EmployeeCsvImportResult = CsvImportPlan & {
+  message?: string;
+};
+
+export async function previewEmployeeCsv(
+  body: EmployeeCsvImportBody,
+): Promise<EmployeeCsvImportResult> {
+  const res = await authenticatedFetch("/api/people/employees/import/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<EmployeeCsvImportResult & { error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (json.ok !== true) throw new Error(json.error ?? "CSV preview failed");
+  return json;
+}
+
+export async function importEmployeeCsv(
+  body: EmployeeCsvImportBody,
+): Promise<EmployeeCsvImportResult> {
+  const res = await authenticatedFetch("/api/people/employees/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<EmployeeCsvImportResult & { error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (json.ok !== true) throw new Error(json.error ?? "CSV import failed");
+  return json;
+}
+
+function filenameFromDisposition(header: string | null): string {
+  if (!header) return "employees.csv";
+  const match = header.match(/filename="([^"]+)"/i);
+  const name = match?.[1]?.trim();
+  return name || "employees.csv";
+}
+
+export async function exportEmployeesCsv(): Promise<void> {
+  const res = await authenticatedFetch("/api/people/employees/export");
+  if (!res.ok) {
+    const json = await readJson<{ error?: string }>(res);
+    throw new Error(errFrom(res, json));
+  }
+  const blob = await res.blob();
+  const filename = filenameFromDisposition(res.headers.get("content-disposition"));
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

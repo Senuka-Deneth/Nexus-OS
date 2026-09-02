@@ -18,6 +18,9 @@ import {
   type CsvProfileName,
 } from "@/lib/csv/profiles";
 
+/** People import row cap (B4/C3 pass this as maxRows). */
+export const CSV_IMPORT_MAX_ROWS = 500;
+
 /** sourceColumn → field name */
 export type CsvColumnMapping = Record<string, string>;
 
@@ -69,6 +72,8 @@ export type PlanCsvImportInput = {
   /** Lowercased emails already present in the tenant (B4/C3 pass these). */
   existingKeys?: Iterable<string>;
   maxBytes?: number;
+  /** When set, more data rows than this (including blanks) is a file error. */
+  maxRows?: number;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -266,6 +271,10 @@ function emptySummary(): CsvImportSummary {
   return { imported: 0, updated: 0, duplicates: 0, failed: 0 };
 }
 
+export function formatCsvImportSummary(summary: CsvImportSummary): string {
+  return `${summary.imported} imported / ${summary.updated} updated / ${summary.duplicates} duplicates / ${summary.failed} failed`;
+}
+
 function countSummary(rows: PlannedCsvRow[]): CsvImportSummary {
   const summary = emptySummary();
   for (const row of rows) {
@@ -340,6 +349,18 @@ export function planCsvImport(input: PlanCsvImportInput): CsvImportResult {
 
   const parsed = parseCsv(input.text);
   if (!parsed.ok) return parsed;
+
+  if (
+    typeof input.maxRows === "number" &&
+    Number.isFinite(input.maxRows) &&
+    input.maxRows >= 0 &&
+    parsed.rows.length > input.maxRows
+  ) {
+    return {
+      ok: false,
+      error: `CSV exceeds the ${input.maxRows} row limit`,
+    };
+  }
 
   const profile = getCsvProfile(input.profile);
   const mappingResult = resolveMapping(parsed.headers, profile, input.mapping);

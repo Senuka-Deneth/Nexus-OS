@@ -49,8 +49,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none. — 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `scripts/csv_engine.test.ts`
   Done: 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `lib/csv/index.ts`, `scripts/csv_engine.test.ts`
 
-- [ ] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3.  
-  Done:
+- [x] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3. — 2026-09-02 — `lib/people/employee-csv.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`
+  Done: 2026-09-02 — `lib/csv/serialize.ts`, `lib/csv/plan.ts`, `lib/people/employee-csv.ts`, `lib/people/employees.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/import/preview/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`, `components/people/EmployeesList.tsx`, `lib/queries/fetchers.ts`, `scripts/people_employees_csv.test.ts`
 
 - [ ] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2.  
   Done:
@@ -110,7 +110,7 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 ### Human (not agent)
 
 - [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); B1+ pending
-- [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory)
+- [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---
 
