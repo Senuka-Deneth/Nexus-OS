@@ -13,7 +13,10 @@ import type {
   EmploymentStatus,
   Job,
   JobStatus,
+  CandidateJobStage,
+  CandidateJobStageCounts,
   JobCandidateListItem,
+  TeamAssignee,
   Metrics,
   MetricsTimeseries,
   MetricsTimeseriesRange,
@@ -654,12 +657,48 @@ export const JOB_CANDIDATES_PAGE_SIZE = 50;
 export type JobCandidatesListParams = {
   limit?: number;
   offset?: number;
+  stage?: CandidateJobStage | null;
 };
 
 export type JobCandidatesListResult = {
   data: JobCandidateListItem[];
   count: number;
+  stage_counts: CandidateJobStageCounts;
+  assignees: TeamAssignee[];
 };
+
+const EMPTY_STAGE_COUNTS: CandidateJobStageCounts = {
+  new: 0,
+  shortlisted: 0,
+  contacted: 0,
+  decision: 0,
+};
+
+function parseStageCounts(raw: unknown): CandidateJobStageCounts {
+  if (!raw || typeof raw !== "object") return { ...EMPTY_STAGE_COUNTS };
+  const record = raw as Record<string, unknown>;
+  return {
+    new: typeof record.new === "number" ? record.new : 0,
+    shortlisted: typeof record.shortlisted === "number" ? record.shortlisted : 0,
+    contacted: typeof record.contacted === "number" ? record.contacted : 0,
+    decision: typeof record.decision === "number" ? record.decision : 0,
+  };
+}
+
+function parseAssignees(raw: unknown): TeamAssignee[] {
+  if (!Array.isArray(raw)) return [];
+  const out: TeamAssignee[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as { id?: unknown; full_name?: unknown };
+    if (typeof row.id !== "string" || !row.id) continue;
+    out.push({
+      id: row.id,
+      full_name: typeof row.full_name === "string" ? row.full_name : null,
+    });
+  }
+  return out;
+}
 
 export async function jobCandidatesQuery(
   jobId: string,
@@ -668,6 +707,7 @@ export async function jobCandidatesQuery(
   const search = new URLSearchParams();
   search.set("limit", String(params.limit ?? JOB_CANDIDATES_PAGE_SIZE));
   search.set("offset", String(params.offset ?? 0));
+  if (params.stage) search.set("stage", params.stage);
 
   const res = await authenticatedFetch(
     `/api/people/jobs/${encodeURIComponent(jobId)}/candidates?${search.toString()}`,
@@ -675,6 +715,8 @@ export async function jobCandidatesQuery(
   const json = await readJson<{
     data?: JobCandidateListItem[];
     count?: number;
+    stage_counts?: CandidateJobStageCounts;
+    assignees?: TeamAssignee[];
     error?: string;
   }>(res);
   if (!res.ok) throw new Error(errFrom(res, json));
@@ -684,6 +726,8 @@ export async function jobCandidatesQuery(
   return {
     data: json.data,
     count: typeof json.count === "number" ? json.count : json.data.length,
+    stage_counts: parseStageCounts(json.stage_counts),
+    assignees: parseAssignees(json.assignees),
   };
 }
 
@@ -707,6 +751,71 @@ export async function updateCandidateJobOverrideMutation(
     throw new Error("Invalid application response");
   }
   return json.data;
+}
+
+export type CandidateJobPipelineBody = {
+  stage?: CandidateJobStage;
+  assigned_to?: string | null;
+};
+
+export async function updateCandidateJobPipelineMutation(
+  applicationId: string,
+  body: CandidateJobPipelineBody,
+): Promise<JobCandidateListItem> {
+  const res = await authenticatedFetch(
+    `/api/people/candidate-jobs/${encodeURIComponent(applicationId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: JobCandidateListItem; error?: string }>(
+    res,
+  );
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid application response");
+  }
+  return json.data;
+}
+
+export type BulkCandidateJobStageBody = {
+  ids: string[];
+  stage: CandidateJobStage;
+  assigned_to?: string | null;
+};
+
+export type BulkCandidateJobStageResult = {
+  data: JobCandidateListItem[];
+  skipped: number;
+};
+
+export async function bulkUpdateCandidateJobStageMutation(
+  jobId: string,
+  body: BulkCandidateJobStageBody,
+): Promise<BulkCandidateJobStageResult> {
+  const res = await authenticatedFetch(
+    `/api/people/jobs/${encodeURIComponent(jobId)}/candidates/stage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{
+    data?: JobCandidateListItem[];
+    skipped?: number;
+    error?: string;
+  }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!Array.isArray(json.data)) {
+    throw new Error("Invalid bulk stage response");
+  }
+  return {
+    data: json.data,
+    skipped: typeof json.skipped === "number" ? json.skipped : 0,
+  };
 }
 
 export type CandidateCsvImportBody = {

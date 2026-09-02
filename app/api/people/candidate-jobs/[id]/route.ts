@@ -7,7 +7,7 @@ import {
   requireApiTenantContext,
 } from "@/lib/api-security";
 import {
-  updateCandidateJobOverride,
+  patchCandidateJob,
   type CandidateJobErr,
 } from "@/lib/people/candidate-jobs";
 
@@ -37,7 +37,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (!parsed.ok) return parsed.response;
 
   const id = context.params?.id ?? "";
-  const result = await updateCandidateJobOverride(tenant, id, parsed.body);
+  const result = await patchCandidateJob(tenant, id, parsed.body);
   if (!result.ok) return fromService(result);
 
   return NextResponse.json({ data: result.data });

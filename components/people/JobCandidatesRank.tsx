@@ -12,7 +12,14 @@ import {
   Users,
 } from "lucide-react";
 import { CandidateConsentPill } from "@/components/people/CandidateConsentPill";
+import { CandidateStagePill } from "@/components/people/CandidateStagePill";
+import { ConfirmDialog } from "@/components/people/ConfirmDialog";
 import { SCORING_WEIGHT_LABELS } from "@/components/people/job-labels";
+import { PEOPLE_CONTROL_CLASS } from "@/components/people/PeopleField";
+import {
+  CANDIDATE_JOB_STAGE_LABELS,
+  parseCandidateJobStage,
+} from "@/components/people/pipeline-labels";
 import {
   DATA_QUALITY_LABELS,
   isMatchExplanationError,
@@ -23,21 +30,38 @@ import {
 import { useTenantScope } from "@/components/tenant/TenantScope";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterChip } from "@/components/ui/FilterChip";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   JOB_CANDIDATES_PAGE_SIZE,
+  bulkUpdateCandidateJobStageMutation,
   jobCandidatesQuery,
   updateCandidateJobOverrideMutation,
+  updateCandidateJobPipelineMutation,
 } from "@/lib/queries/fetchers";
 import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
-import type { JobCandidateListItem } from "@/types";
+import {
+  CANDIDATE_JOB_STAGES,
+  type CandidateJobStage,
+  type JobCandidateListItem,
+  type TeamAssignee,
+} from "@/types";
 
 function scoreLabel(row: JobCandidateListItem): string {
   if (row.data_quality === "pending") return "Pending";
   if (row.data_quality === "insufficient") return "Insufficient";
   if (typeof row.match_score === "number") return String(row.match_score);
   return "—";
+}
+
+function assigneeOptionLabel(
+  assignee: TeamAssignee,
+  currentUserId: string | null,
+): string {
+  const name = assignee.full_name?.trim() || "Unnamed member";
+  if (currentUserId && assignee.id === currentUserId) return `${name} (You)`;
+  return name;
 }
 
 function RankRow({
@@ -47,7 +71,9 @@ function RankRow({
   onToggleSelect,
   expanded,
   onToggleExpand,
-  onOverrideSaved,
+  assignees,
+  currentUserId,
+  onSaved,
 }: {
   row: JobCandidateListItem;
   rankIndex: number;
@@ -55,7 +81,9 @@ function RankRow({
   onToggleSelect: () => void;
   expanded: boolean;
   onToggleExpand: () => void;
-  onOverrideSaved: (updated: JobCandidateListItem) => void;
+  assignees: TeamAssignee[];
+  currentUserId: string | null;
+  onSaved: () => void;
 }) {
   const [overrideInput, setOverrideInput] = useState(
     row.manual_rank_override != null ? String(row.manual_rank_override) : "",
@@ -72,15 +100,14 @@ function RankRow({
   const sourceUrl = safeHttpUrl(row.candidate.source_url);
   const explanation = row.ai_explanation;
   const hasExplanationError = isMatchExplanationError(explanation);
+  const assigneeKnown = assignees.some((item) => item.id === row.assigned_to);
 
   async function saveOverride() {
     setSaving(true);
     setSaveError(null);
     const trimmed = overrideInput.trim();
     const value =
-      trimmed === ""
-        ? null
-        : Number.parseInt(trimmed, 10);
+      trimmed === "" ? null : Number.parseInt(trimmed, 10);
     if (trimmed !== "" && (!Number.isInteger(value) || value! < 1 || value! > 999)) {
       setSaveError("Override must be 1–999 or empty to clear");
       setSaving(false);
@@ -88,7 +115,7 @@ function RankRow({
     }
     try {
       const updated = await updateCandidateJobOverrideMutation(row.id, value);
-      onOverrideSaved(updated);
+      onSaved();
       setOverrideInput(
         updated.manual_rank_override != null
           ? String(updated.manual_rank_override)
@@ -96,6 +123,24 @@ function RankRow({
       );
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Could not save override");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function savePipeline(body: {
+    stage?: CandidateJobStage;
+    assigned_to?: string | null;
+  }) {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateCandidateJobPipelineMutation(row.id, body);
+      onSaved();
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Could not update pipeline",
+      );
     } finally {
       setSaving(false);
     }
@@ -134,6 +179,7 @@ function RankRow({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <CandidateStagePill stage={row.stage} />
               <span
                 className={cn(
                   "inline-flex min-h-[1.75rem] items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold tabular-nums",
@@ -193,6 +239,46 @@ function RankRow({
           ) : null}
 
           <div className="flex flex-wrap items-end gap-2 pt-1">
+            <label className="flex min-w-[10rem] flex-col gap-1 text-xs text-muted">
+              Pipeline stage
+              <select
+                className={cn(PEOPLE_CONTROL_CLASS, "h-11 w-auto min-w-[10rem]")}
+                value={row.stage}
+                disabled={saving}
+                onChange={(event) => {
+                  const next = parseCandidateJobStage(event.target.value);
+                  if (next) void savePipeline({ stage: next });
+                }}
+              >
+                {CANDIDATE_JOB_STAGES.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {CANDIDATE_JOB_STAGE_LABELS[stage]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-[12rem] flex-col gap-1 text-xs text-muted">
+              Assigned to
+              <select
+                className={cn(PEOPLE_CONTROL_CLASS, "h-11 w-auto min-w-[12rem]")}
+                value={row.assigned_to ?? ""}
+                disabled={saving}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  void savePipeline({ assigned_to: next === "" ? null : next });
+                }}
+              >
+                <option value="">Unassigned</option>
+                {row.assigned_to && !assigneeKnown ? (
+                  <option value={row.assigned_to}>Assigned member</option>
+                ) : null}
+                {assignees.map((assignee) => (
+                  <option key={assignee.id} value={assignee.id}>
+                    {assigneeOptionLabel(assignee, currentUserId)}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="flex flex-col gap-1 text-xs text-muted">
               Manual rank override
               <input
@@ -348,11 +434,18 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
   const queryClient = useQueryClient();
   const tenant = useTenantScope();
   const teamId = tenant.teamId;
+  const currentUserId = tenant.userId;
   const queriesEnabled = tenant.ready && teamId !== null && Boolean(jobId);
 
   const [offset, setOffset] = useState(0);
+  const [stageFilter, setStageFilter] = useState<CandidateJobStage | "">("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [bulkStage, setBulkStage] = useState<CandidateJobStage>("shortlisted");
+  const [bulkAssignee, setBulkAssignee] = useState("");
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.jobCandidates(
@@ -360,11 +453,13 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
       jobId,
       JOB_CANDIDATES_PAGE_SIZE,
       offset,
+      stageFilter,
     ),
     queryFn: () =>
       jobCandidatesQuery(jobId, {
         limit: JOB_CANDIDATES_PAGE_SIZE,
         offset,
+        stage: stageFilter || null,
       }),
     enabled: queriesEnabled,
     staleTime: 15_000,
@@ -372,6 +467,14 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
 
   const rows = useMemo(() => data?.data ?? [], [data?.data]);
   const count = data?.count ?? 0;
+  const stageCounts = data?.stage_counts;
+  const assignees = data?.assignees ?? [];
+  const totalCandidates = stageCounts
+    ? stageCounts.new +
+      stageCounts.shortlisted +
+      stageCounts.contacted +
+      stageCounts.decision
+    : 0;
   const hasPrev = offset > 0;
   const hasNext = offset + JOB_CANDIDATES_PAGE_SIZE < count;
 
@@ -384,7 +487,7 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
     });
   }, [queryClient, teamId, jobId]);
 
-  const onOverrideSaved = useCallback(async () => {
+  const onSaved = useCallback(async () => {
     await invalidate();
   }, [invalidate]);
 
@@ -416,7 +519,38 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
     });
   }
 
+  function setFilter(next: CandidateJobStage | "") {
+    setStageFilter(next);
+    setOffset(0);
+  }
+
+  async function confirmBulkMove() {
+    setBulkBusy(true);
+    setBulkError(null);
+    try {
+      const body: {
+        ids: string[];
+        stage: CandidateJobStage;
+        assigned_to?: string | null;
+      } = {
+        ids: [...selectedIds],
+        stage: bulkStage,
+      };
+      if (bulkAssignee === "null") body.assigned_to = null;
+      else if (bulkAssignee) body.assigned_to = bulkAssignee;
+      await bulkUpdateCandidateJobStageMutation(jobId, body);
+      setSelectedIds(new Set());
+      setBulkConfirmOpen(false);
+      await invalidate();
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "Could not move candidates");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   const errorMsg = error instanceof Error ? error.message : null;
+  const loaded = Boolean(data) || (!isPending && !errorMsg);
 
   return (
     <section className="space-y-4">
@@ -429,8 +563,8 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
           <p className="text-sm leading-relaxed text-atmospheric-grey/90">
             <strong className="font-semibold">Advisory only.</strong> Match
             scores and AI summaries help you review candidates. They do not
-            hire, reject, or change pipeline stage. You decide ranking and next
-            steps.
+            hire or reject anyone. You move people through New, Shortlisted,
+            Contacted, and Decision.
           </p>
         </div>
       </div>
@@ -444,11 +578,93 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
         ) : null}
       </div>
 
-      {isPending ? (
+      {loaded ? (
+        <div className="-mx-1 overflow-x-auto px-1">
+          <div className="flex w-max gap-2 md:w-full md:flex-wrap">
+            <FilterChip
+              active={stageFilter === ""}
+              onClick={() => setFilter("")}
+            >
+              All{stageCounts ? ` (${totalCandidates})` : ""}
+            </FilterChip>
+            {CANDIDATE_JOB_STAGES.map((stage) => (
+              <FilterChip
+                key={stage}
+                active={stageFilter === stage}
+                onClick={() => setFilter(stage)}
+              >
+                {CANDIDATE_JOB_STAGE_LABELS[stage]}
+                {stageCounts ? ` (${stageCounts[stage]})` : ""}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {selectedCount > 0 ? (
+        <div className="sticky bottom-3 z-20 flex flex-col gap-3 rounded-xl border border-border-strong bg-glass p-3 shadow-lg backdrop-blur-xl sm:flex-row sm:flex-wrap sm:items-end">
+          <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted">
+            Move to stage
+            <select
+              className={cn(PEOPLE_CONTROL_CLASS, "h-11")}
+              value={bulkStage}
+              onChange={(event) => {
+                const next = parseCandidateJobStage(event.target.value);
+                if (next) setBulkStage(next);
+              }}
+            >
+              {CANDIDATE_JOB_STAGES.map((stage) => (
+                <option key={stage} value={stage}>
+                  {CANDIDATE_JOB_STAGE_LABELS[stage]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs text-muted">
+            Assignee
+            <select
+              className={cn(PEOPLE_CONTROL_CLASS, "h-11")}
+              value={bulkAssignee}
+              onChange={(event) => setBulkAssignee(event.target.value)}
+            >
+              <option value="">Keep current</option>
+              <option value="null">Unassigned</option>
+              {assignees.map((assignee) => (
+                <option key={assignee.id} value={assignee.id}>
+                  {assigneeOptionLabel(assignee, currentUserId)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => {
+                setBulkError(null);
+                setBulkConfirmOpen(true);
+              }}
+            >
+              Move {selectedCount}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Clear
+            </Button>
+          </div>
+          {bulkError && !bulkConfirmOpen ? (
+            <p role="alert" className="w-full text-xs text-status-critical">
+              {bulkError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {isPending && !data ? (
         <div className="flex min-h-[12rem] items-center justify-center">
           <Spinner label="Loading candidates" />
         </div>
-      ) : errorMsg ? (
+      ) : errorMsg && !data ? (
         <EmptyState
           title="Could not load candidates"
           description={errorMsg}
@@ -457,8 +673,16 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
         />
       ) : rows.length === 0 ? (
         <EmptyState
-          title="No candidates on this job yet"
-          description="Import candidates from CSV or add them manually, then matching runs in the background."
+          title={
+            totalCandidates === 0
+              ? "No candidates on this job yet"
+              : "No candidates in this stage"
+          }
+          description={
+            totalCandidates === 0
+              ? "Import candidates from CSV or add them manually, then matching runs in the background."
+              : "Try another pipeline stage, or move people here from the ranked list."
+          }
           icon={<Users />}
           className="min-h-[12rem]"
         />
@@ -496,7 +720,9 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
                     current === row.id ? null : row.id,
                   )
                 }
-                onOverrideSaved={onOverrideSaved}
+                assignees={assignees}
+                currentUserId={currentUserId}
+                onSaved={onSaved}
               />
             ))}
           </div>
@@ -536,6 +762,35 @@ export function JobCandidatesRank({ jobId }: { jobId: string }) {
           </div>
         </div>
       )}
+
+      {bulkConfirmOpen ? (
+        <ConfirmDialog
+          title="Move candidates"
+          description={
+            <>
+              Move {selectedCount} candidate{selectedCount === 1 ? "" : "s"} to{" "}
+              {CANDIDATE_JOB_STAGE_LABELS[bulkStage]}
+              {bulkAssignee === "null"
+                ? " and clear assignee"
+                : bulkAssignee
+                  ? " and update assignee"
+                  : ""}
+              . This does not hire, reject, or send email.
+              {bulkError ? (
+                <p role="alert" className="mt-2 text-status-critical">
+                  {bulkError}
+                </p>
+              ) : null}
+            </>
+          }
+          confirmLabel={`Move to ${CANDIDATE_JOB_STAGE_LABELS[bulkStage]}`}
+          busy={bulkBusy}
+          onConfirm={() => void confirmBulkMove()}
+          onCancel={() => {
+            if (!bulkBusy) setBulkConfirmOpen(false);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

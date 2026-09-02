@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import {
+  JSON_LIMITS,
   jsonError,
   rateLimit,
+  readJsonObjectWithLimit,
   requireApiTenantContext,
 } from "@/lib/api-security";
 import {
-  listJobCandidates,
-  parseListJobCandidatesQuery,
+  bulkUpdateCandidateJobStage,
   type CandidateJobErr,
 } from "@/lib/people/candidate-jobs";
 
@@ -20,11 +21,11 @@ function fromService(err: CandidateJobErr): NextResponse {
   return jsonError(err.error, err.status);
 }
 
-export async function GET(request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   const limited = rateLimit(
     request,
-    "api:people:jobs:id:candidates:get",
-    120,
+    "api:people:jobs:id:candidates:stage:post",
+    60,
     60_000,
   );
   if (limited) return limited;
@@ -32,18 +33,12 @@ export async function GET(request: Request, context: RouteContext) {
   const tenant = await requireApiTenantContext();
   if (!tenant.ok) return tenant.response;
 
-  const jobId = context.params?.id ?? "";
-  const url = new URL(request.url);
-  const query = parseListJobCandidatesQuery(url.searchParams);
-  if (!query.ok) return fromService(query);
+  const parsed = await readJsonObjectWithLimit(request, JSON_LIMITS.small);
+  if (!parsed.ok) return parsed.response;
 
-  const result = await listJobCandidates(tenant, jobId, query);
+  const jobId = context.params?.id ?? "";
+  const result = await bulkUpdateCandidateJobStage(tenant, jobId, parsed.body);
   if (!result.ok) return fromService(result);
 
-  return NextResponse.json({
-    data: result.data,
-    count: result.count,
-    stage_counts: result.stage_counts,
-    assignees: result.assignees,
-  });
+  return NextResponse.json({ data: result.data, skipped: result.skipped });
 }

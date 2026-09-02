@@ -107,6 +107,14 @@ export const queryKeys = {
     jobId: string,
     limit: number,
     offset: number,
+    stage: string,
   ) =>
-    [...queryKeys.root(teamId), "job-candidates", jobId, limit, offset] as const,
+    [
+      ...queryKeys.root(teamId),
+      "job-candidates",
+      jobId,
+      limit,
+      offset,
+      stage,
+    ] as const,
 } as const;

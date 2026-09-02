@@ -326,6 +326,14 @@ export const CANDIDATE_JOB_STAGES = [
 ] as const;
 export type CandidateJobStage = (typeof CANDIDATE_JOB_STAGES)[number];
 
+export type CandidateJobStageCounts = Record<CandidateJobStage, number>;
+
+/** Workspace member that may be set as `candidate_jobs.assigned_to`. */
+export type TeamAssignee = {
+  id: string;
+  full_name: string | null;
+};
+
 export const CANDIDATE_JOB_DATA_QUALITIES = [
   "pending",
   "sufficient",

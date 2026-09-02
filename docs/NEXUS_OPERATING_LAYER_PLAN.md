@@ -76,8 +76,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **D5** Candidate ranking UI (advisory; manual override). Depends: D4. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/JobDetail.tsx`, `scripts/people_candidate_jobs_api.test.ts`
   Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/ranking-labels.ts`, `components/people/JobDetail.tsx`, `components/people/JobsList.tsx`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`, `package.json`
 
-- [ ] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5.  
-  Done:
+- [x] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`
+  Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/CandidateStagePill.tsx`, `components/people/pipeline-labels.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`
 
 - [ ] **F1** Generic email draft service (never sends). Depends: none.  
   Done:

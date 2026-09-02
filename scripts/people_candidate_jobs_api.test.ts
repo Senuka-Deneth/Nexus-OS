@@ -1,5 +1,5 @@
 /**
- * Wave 1 D5 — Job candidate ranking API (mocked tenant + supabase).
+ * Wave 1 D5/D6 — Job candidate ranking + pipeline API (mocked tenant + supabase).
  * Run: npx tsx scripts/people_candidate_jobs_api.test.ts
  */
 
@@ -14,17 +14,22 @@ const OTHER_TEAM_ID = "99999999-9999-4999-8999-999999999999";
 const WORKSPACE_ID = "22222222-2222-4222-8222-222222222222";
 const USER_ID = "user-1";
 const JOB_ID = "job-1";
+const JOB_ID_2 = "job-2";
 const OTHER_JOB_ID = "job-other-team";
 const CAND_A = "cand-a";
 const CAND_B = "cand-b";
 const CAND_C = "cand-c";
 const CAND_D = "cand-d";
 const CAND_ARCHIVED = "cand-archived";
+const CAND_E = "cand-e";
 const CJ_HIGH = "cj-high";
 const CJ_LOW = "cj-low";
 const CJ_OVERRIDE = "cj-override";
 const CJ_INSUFF = "cj-insuff";
 const CJ_ARCHIVED = "cj-archived";
+const CJ_OTHER_JOB = "cj-other-job";
+const ASSIGNEE_OK = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const ASSIGNEE_OTHER = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 type Row = Record<string, unknown>;
 type AuthMode = "ok" | "unauthorized" | "no_tenant";
@@ -33,6 +38,7 @@ const jobsTable: Row[] = [];
 const candidatesTable: Row[] = [];
 const candidateJobsTable: Row[] = [];
 const auditEventsTable: Row[] = [];
+const profilesTable: Row[] = [];
 let authMode: AuthMode = "ok";
 
 function resetState(): void {
@@ -40,6 +46,7 @@ function resetState(): void {
   candidatesTable.length = 0;
   candidateJobsTable.length = 0;
   auditEventsTable.length = 0;
+  profilesTable.length = 0;
   authMode = "ok";
 
   jobsTable.push(
@@ -48,6 +55,13 @@ function resetState(): void {
       team_id: TEAM_ID,
       workspace_id: WORKSPACE_ID,
       title: "Engineer",
+      archived_at: null,
+    },
+    {
+      id: JOB_ID_2,
+      team_id: TEAM_ID,
+      workspace_id: WORKSPACE_ID,
+      title: "Designer",
       archived_at: null,
     },
     {
@@ -126,6 +140,19 @@ function resetState(): void {
       consent_status: "unknown",
       notes: null,
       archived_at: new Date().toISOString(),
+    },
+    {
+      id: CAND_E,
+      team_id: TEAM_ID,
+      full_name: "Evan Extra",
+      headline: null,
+      current_role: null,
+      location: null,
+      source: null,
+      source_url: null,
+      consent_status: "owner_imported",
+      notes: null,
+      archived_at: null,
     },
   );
 
@@ -244,6 +271,39 @@ function resetState(): void {
       created_at: "2026-01-06T00:00:00Z",
       updated_at: "2026-01-06T00:00:00Z",
     },
+    {
+      id: CJ_OTHER_JOB,
+      team_id: TEAM_ID,
+      job_id: JOB_ID_2,
+      candidate_id: CAND_E,
+      stage: "new",
+      match_score: 50,
+      match_components: [],
+      match_weights_used: null,
+      scoring_version: "people.match.v1",
+      data_quality: "sufficient",
+      insufficient_reason: null,
+      ai_explanation: null,
+      ai_model: null,
+      ai_prompt_version: null,
+      manual_rank_override: null,
+      assigned_to: null,
+      created_at: "2026-01-07T00:00:00Z",
+      updated_at: "2026-01-07T00:00:00Z",
+    },
+  );
+
+  profilesTable.push(
+    {
+      id: ASSIGNEE_OK,
+      team_id: TEAM_ID,
+      full_name: "Ada Owner",
+    },
+    {
+      id: ASSIGNEE_OTHER,
+      team_id: OTHER_TEAM_ID,
+      full_name: "Other Team",
+    },
   );
 }
 
@@ -252,6 +312,7 @@ function storeFor(table: string): Row[] {
   if (table === "candidates") return candidatesTable;
   if (table === "candidate_jobs") return candidateJobsTable;
   if (table === "audit_events") return auditEventsTable;
+  if (table === "profiles") return profilesTable;
   return [];
 }
 
@@ -301,6 +362,7 @@ function tenantSupabase() {
       let insertRow: Row | null = null;
       let updatePatch: Row | null = null;
       let range: { from: number; to: number } | null = null;
+      let limitN: number | null = null;
       let isCandidateJobsJoin = false;
 
       const applyFilters = () => store.filter((r) => filters.every((f) => f(r)));
@@ -336,6 +398,7 @@ function tenantSupabase() {
         }
         const count = rows.length;
         if (range) rows = rows.slice(range.from, range.to + 1);
+        if (limitN != null) rows = rows.slice(0, limitN);
         return { data: rows.map((r) => ({ ...r })), error: null, count };
       };
 
@@ -370,6 +433,11 @@ function tenantSupabase() {
           }
           return chain;
         },
+        in(col: string, vals: unknown[]) {
+          const set = new Set(vals);
+          filters.push((r) => set.has(r[col]));
+          return chain;
+        },
         is(col: string, val: unknown) {
           if (col.includes("candidates.archived_at")) {
             filters.push((r) => {
@@ -382,6 +450,10 @@ function tenantSupabase() {
           return chain;
         },
         order() {
+          return chain;
+        },
+        limit(n: number) {
+          limitN = n;
           return chain;
         },
         range(from: number, to: number) {
@@ -469,6 +541,11 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
   const {
     listJobCandidates,
     updateCandidateJobOverride,
+    updateCandidateJobPipeline,
+    patchCandidateJob,
+    bulkUpdateCandidateJobStage,
+    parseListJobCandidatesQuery,
+    BULK_STAGE_MAX_IDS,
   } = await import("@/lib/people/candidate-jobs");
 
   await check("list sorts override before higher score; archived omitted", async () => {
@@ -476,6 +553,7 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       ok: true,
       limit: 50,
       offset: 0,
+      stage: null,
     });
     assert(result.ok, "ok");
     if (!result.ok) return;
@@ -492,6 +570,16 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       result.data.find((row) => row.id === CJ_INSUFF)?.match_score === null,
       "insufficient has null score",
     );
+    assert(result.stage_counts.new === 4, "four in new");
+    assert(result.stage_counts.shortlisted === 0, "none shortlisted");
+    assert(
+      result.assignees.some((row) => row.id === ASSIGNEE_OK),
+      "team assignee listed",
+    );
+    assert(
+      !result.assignees.some((row) => row.id === ASSIGNEE_OTHER),
+      "other team assignee omitted",
+    );
   });
 
   await check("list returns 404 for other team job", async () => {
@@ -499,6 +587,7 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       ok: true,
       limit: 50,
       offset: 0,
+      stage: null,
     });
     assert(!result.ok && result.status === 404, "404");
   });
@@ -508,6 +597,7 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       ok: true,
       limit: 50,
       offset: 0,
+      stage: null,
     });
     assert(result.ok, "ok");
     if (!result.ok) return;
@@ -591,6 +681,226 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
     );
     assert(res.status === 401, "401");
     authMode = "ok";
+  });
+
+  await check("parse rejects unknown stage", async () => {
+    const parsed = parseListJobCandidatesQuery(
+      new URLSearchParams("stage=offer"),
+    );
+    assert(!parsed.ok && parsed.status === 400, "400");
+  });
+
+  await check("list filters by stage and keeps unfiltered counts", async () => {
+    const moved = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      stage: "shortlisted",
+    });
+    assert(moved.ok, "moved");
+    const filtered = await listJobCandidates(tenantCtx, JOB_ID, {
+      ok: true,
+      limit: 50,
+      offset: 0,
+      stage: "shortlisted",
+    });
+    assert(filtered.ok, "ok");
+    if (!filtered.ok) return;
+    assert(filtered.data.length === 1, "one shortlisted");
+    assert(filtered.data[0].id === CJ_LOW, "low row");
+    assert(filtered.stage_counts.shortlisted === 1, "count shortlisted");
+    assert(filtered.stage_counts.new === 3, "remaining new");
+    assert(filtered.count === 1, "filtered count");
+  });
+
+  await check("pipeline skip and reverse write audit; scores unchanged", async () => {
+    const before = candidateJobsTable.find((r) => r.id === CJ_HIGH)?.match_score;
+    const skip = await updateCandidateJobPipeline(tenantCtx, CJ_HIGH, {
+      stage: "decision",
+    });
+    assert(skip.ok, "skip ok");
+    if (!skip.ok) return;
+    assert(skip.data.stage === "decision", "decision");
+    assert(skip.data.match_score === before, "score unchanged");
+    const reverse = await updateCandidateJobPipeline(tenantCtx, CJ_HIGH, {
+      stage: "shortlisted",
+    });
+    assert(reverse.ok, "reverse ok");
+    if (!reverse.ok) return;
+    assert(reverse.data.stage === "shortlisted", "shortlisted");
+    assert(auditEventsTable.length === 2, "two audits");
+    assert(auditEventsTable[0].action === "stage_change", "stage_change");
+    const prev = auditEventsTable[0].prev_state as { stage: string };
+    const next = auditEventsTable[0].next_state as { stage: string };
+    assert(prev.stage === "new", "prev new");
+    assert(next.stage === "decision", "next decision");
+    assert(!("email" in (auditEventsTable[0].metadata as object)), "no email");
+  });
+
+  await check("same-stage no-op writes no audit", async () => {
+    const result = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      stage: "new",
+    });
+    assert(result.ok, "ok");
+    if (!result.ok) return;
+    assert(result.data.stage === "new", "still new");
+    assert(auditEventsTable.length === 0, "no audit");
+  });
+
+  await check("invalid stage 400", async () => {
+    const result = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      stage: "offer",
+    });
+    assert(!result.ok && result.status === 400, "400");
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_LOW)?.stage === "new",
+      "unchanged",
+    );
+  });
+
+  await check("assigned_to same-team ok; other-team rejected", async () => {
+    const ok = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      assigned_to: ASSIGNEE_OK,
+    });
+    assert(ok.ok, "ok");
+    if (!ok.ok) return;
+    assert(ok.data.assigned_to === ASSIGNEE_OK, "assigned");
+    assert(auditEventsTable.length === 1, "one audit");
+    assert(auditEventsTable[0].action === "assign", "assign action");
+    const denied = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      assigned_to: ASSIGNEE_OTHER,
+    });
+    assert(!denied.ok && denied.status === 400, "other team 400");
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_LOW)?.assigned_to ===
+        ASSIGNEE_OK,
+      "still same-team assignee",
+    );
+  });
+
+  await check("pipeline rejects score fields; mix with override 400", async () => {
+    const score = await updateCandidateJobPipeline(tenantCtx, CJ_LOW, {
+      stage: "shortlisted",
+      match_score: 100,
+    } as Record<string, unknown>);
+    assert(!score.ok && score.status === 400, "score rejected");
+    const mixed = await patchCandidateJob(tenantCtx, CJ_LOW, {
+      manual_rank_override: 2,
+      stage: "shortlisted",
+    });
+    assert(!mixed.ok && mixed.status === 400, "mix rejected");
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_LOW)?.stage === "new",
+      "stage unchanged",
+    );
+  });
+
+  await check("bulk moves, skips no-ops, audits per change", async () => {
+    const result = await bulkUpdateCandidateJobStage(tenantCtx, JOB_ID, {
+      ids: [CJ_LOW, CJ_HIGH],
+      stage: "contacted",
+    });
+    assert(result.ok, "ok");
+    if (!result.ok) return;
+    assert(result.data.length === 2, "two updated");
+    assert(result.skipped === 0, "none skipped");
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_LOW)?.stage === "contacted",
+      "low contacted",
+    );
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_HIGH)?.stage === "contacted",
+      "high contacted",
+    );
+    assert(auditEventsTable.length === 2, "two audits");
+    const again = await bulkUpdateCandidateJobStage(tenantCtx, JOB_ID, {
+      ids: [CJ_LOW, CJ_HIGH],
+      stage: "contacted",
+    });
+    assert(again.ok, "noop ok");
+    if (!again.ok) return;
+    assert(again.skipped === 2, "both skipped");
+    assert(again.data.length === 0, "no updated rows");
+    assert(auditEventsTable.length === 2, "no extra audit");
+  });
+
+  await check("bulk rejects wrong job id with no writes", async () => {
+    const before = candidateJobsTable.find((r) => r.id === CJ_LOW)?.stage;
+    const result = await bulkUpdateCandidateJobStage(tenantCtx, JOB_ID, {
+      ids: [CJ_LOW, CJ_OTHER_JOB],
+      stage: "decision",
+    });
+    assert(!result.ok && result.status === 400, "400");
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_LOW)?.stage === before,
+      "low unchanged",
+    );
+    assert(
+      candidateJobsTable.find((r) => r.id === CJ_OTHER_JOB)?.stage === "new",
+      "other job unchanged",
+    );
+    assert(auditEventsTable.length === 0, "no audit");
+  });
+
+  await check("bulk rejects over cap", async () => {
+    const ids = Array.from({ length: BULK_STAGE_MAX_IDS + 1 }, (_, i) => `id-${i}`);
+    const result = await bulkUpdateCandidateJobStage(tenantCtx, JOB_ID, {
+      ids,
+      stage: "shortlisted",
+    });
+    assert(!result.ok && result.status === 400, "400");
+  });
+
+  await check("GET list includes stage_counts; POST bulk route moves", async () => {
+    const { GET } = await import("@/app/api/people/jobs/[id]/candidates/route");
+    const res = await GET(
+      new Request(
+        `https://example.com/api/people/jobs/${JOB_ID}/candidates?stage=new`,
+      ),
+      { params: { id: JOB_ID } },
+    );
+    assert(res.status === 200, `status ${res.status}`);
+    const json = (await res.json()) as {
+      data: unknown[];
+      count: number;
+      stage_counts: { new: number };
+      assignees: unknown[];
+    };
+    assert(Array.isArray(json.data), "data array");
+    assert(typeof json.stage_counts.new === "number", "stage_counts");
+    assert(Array.isArray(json.assignees), "assignees");
+
+    const { POST } = await import(
+      "@/app/api/people/jobs/[id]/candidates/stage/route"
+    );
+    const post = await POST(
+      new Request(
+        `https://example.com/api/people/jobs/${JOB_ID}/candidates/stage`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ids: [CJ_LOW], stage: "shortlisted" }),
+        },
+      ),
+      { params: { id: JOB_ID } },
+    );
+    assert(post.status === 200, `post ${post.status}`);
+    const body = (await post.json()) as { data: { stage: string }[]; skipped: number };
+    assert(body.data[0].stage === "shortlisted", "moved");
+  });
+
+  await check("PATCH route dispatches stage body", async () => {
+    const { PATCH } = await import(
+      "@/app/api/people/candidate-jobs/[id]/route"
+    );
+    const res = await PATCH(
+      new Request(`https://example.com/api/people/candidate-jobs/${CJ_LOW}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ stage: "contacted" }),
+      }),
+      { params: { id: CJ_LOW } },
+    );
+    assert(res.status === 200, `status ${res.status}`);
+    const json = (await res.json()) as { data: { stage: string } };
+    assert(json.data.stage === "contacted", "contacted");
   });
 
   console.log(`\npeople-candidate-jobs: ${passed} checks passed`);
