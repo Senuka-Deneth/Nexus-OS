@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { ArrowLeft, Briefcase } from "lucide-react";
+import { ArrowLeft, Briefcase, Upload } from "lucide-react";
 import { ConfirmDialog } from "@/components/people/ConfirmDialog";
+import { CandidateCsvImport } from "@/components/people/CandidateCsvImport";
 import { JobForm } from "@/components/people/JobForm";
 import { JobStatusPill } from "@/components/people/JobStatusPill";
 import { useTenantScope } from "@/components/tenant/TenantScope";
@@ -29,6 +30,7 @@ export function JobDetail({ jobId }: { jobId: string }) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const {
     data: job,
@@ -151,9 +153,17 @@ export function JobDetail({ jobId }: { jobId: string }) {
           ) : null}
         </div>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-          Edit role details and scoring weights. Archive hides the job from the
-          default list without deleting it.
+          Edit role details and scoring weights. Import candidates from CSV onto
+          this job, or archive to hide it from the default list.
         </p>
+        {!archived ? (
+          <div className="mt-4">
+            <Button variant="secondary" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4" aria-hidden />
+              Import candidates
+            </Button>
+          </div>
+        ) : null}
       </header>
 
       {archived ? (
@@ -224,6 +234,15 @@ export function JobDetail({ jobId }: { jobId: string }) {
           busy={archiveBusy}
           onCancel={() => setArchiveOpen(false)}
           onConfirm={() => void patchArchived(true)}
+        />
+      ) : null}
+
+      {!archived ? (
+        <CandidateCsvImport
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          jobId={job.id}
+          jobTitle={job.title}
         />
       ) : null}
     </div>

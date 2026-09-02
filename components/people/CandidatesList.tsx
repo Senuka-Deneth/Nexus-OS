@@ -9,16 +9,18 @@ import {
   ChevronRight,
   Plus,
   Search,
+  Upload,
   UserRound,
 } from "lucide-react";
 import { CandidateConsentPill } from "@/components/people/CandidateConsentPill";
+import { CandidateCsvImport } from "@/components/people/CandidateCsvImport";
 import { CONSENT_STATUS_LABELS } from "@/components/people/consent-labels";
 import { useTenantScope } from "@/components/tenant/TenantScope";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { Spinner } from "@/components/ui/Spinner";
-import { CANDIDATES_PAGE_SIZE, candidatesQuery } from "@/lib/queries/fetchers";
+import { CANDIDATES_PAGE_SIZE, candidatesQuery, jobsQuery } from "@/lib/queries/fetchers";
 import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
 import { CONSENT_STATUSES, type ConsentStatus } from "@/types";
@@ -41,6 +43,7 @@ export function CandidatesList() {
   const [consentFilter, setConsentFilter] = useState<ConsentStatus | "">("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -73,6 +76,24 @@ export function CandidatesList() {
     enabled: queriesEnabled,
     staleTime: 15_000,
   });
+
+  const { data: jobsData } = useQuery({
+    queryKey: queryKeys.jobs(teamId, "", "", false, 100, 0),
+    queryFn: () =>
+      jobsQuery({
+        includeArchived: false,
+        limit: 100,
+        offset: 0,
+      }),
+    enabled: queriesEnabled,
+    staleTime: 60_000,
+  });
+
+  const importJobs = (jobsData?.data ?? []).map((job) => ({
+    id: job.id,
+    title: job.title,
+  }));
+  const canImport = importJobs.length > 0;
 
   const rows = data?.data ?? [];
   const count = data?.count ?? 0;
@@ -121,14 +142,29 @@ export function CandidatesList() {
             Candidates
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Founder-owned people you may hire. Sparse records are fine. Ranking
-            and CSV import come later.
+            Founder-owned people you may hire. Sparse records are fine. Import
+            from CSV onto a job, or add candidates manually.
           </p>
         </div>
-        <Button onClick={() => router.push("/people/candidates/new")}>
-          <Plus className="h-4 w-4" aria-hidden />
-          Add candidate
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setImportOpen(true)}
+            disabled={!canImport}
+            title={
+              canImport
+                ? undefined
+                : "Create a job first, then import candidates onto it"
+            }
+          >
+            <Upload className="h-4 w-4" aria-hidden />
+            Import CSV
+          </Button>
+          <Button onClick={() => router.push("/people/candidates/new")}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add candidate
+          </Button>
+        </div>
       </header>
 
       {errorMsg && rows.length > 0 ? (
@@ -319,6 +355,12 @@ export function CandidatesList() {
           </div>
         </div>
       )}
+
+      <CandidateCsvImport
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        jobs={importJobs}
+      />
     </div>
   );
 }

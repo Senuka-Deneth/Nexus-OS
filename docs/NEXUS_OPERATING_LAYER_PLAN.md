@@ -58,14 +58,14 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **C2** Candidate CRUD API + UI (no scores). Depends: A2. — 2026-09-02 — `lib/people/candidates.ts`, `app/api/people/candidates/route.ts`, `app/people/candidates/page.tsx`, `components/people/CandidateForm.tsx`
   Done: 2026-09-02 — `types/index.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/route.ts`, `app/api/people/candidates/[id]/route.ts`, `app/people/candidates/page.tsx`, `app/people/candidates/new/page.tsx`, `app/people/candidates/[id]/page.tsx`, `components/people/CandidatesList.tsx`, `components/people/CandidateForm.tsx`, `components/people/CandidateCreate.tsx`, `components/people/CandidateDetail.tsx`, `components/people/PeopleSubnav.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_api.test.ts`
 
-- [ ] **C3** Candidate CSV import onto a selected job (stage `new`, no scores). Depends: B3, B4, C1, C2.  
-  Done:
+- [x] **C3** Candidate CSV import onto a selected job (stage `new`, no scores). Depends: B3, B4, C1, C2. — 2026-09-02 — `lib/people/candidate-csv.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/import/route.ts`, `app/api/people/candidates/import/preview/route.ts`, `components/people/CandidateCsvImport.tsx`, `components/people/CandidatesList.tsx`, `components/people/JobDetail.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_csv.test.ts`
+  Done: 2026-09-02 — `lib/people/candidate-csv.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/import/route.ts`, `app/api/people/candidates/import/preview/route.ts`, `components/people/CandidateCsvImport.tsx`, `components/people/CandidatesList.tsx`, `components/people/JobDetail.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_csv.test.ts`
 
-- [ ] **D2** Deterministic scoring engine (pure, no LLM, no DB). Depends: none. May run in parallel with D1.  
-  Done:
+- [x] **D2** Deterministic scoring engine (pure, no LLM, no DB). Depends: none. May run in parallel with D1. — 2026-09-02 — `lib/people/score.ts`, `scripts/people_score.test.ts`
+  Done: 2026-09-02 — `lib/people/score.ts`, `scripts/people_score.test.ts`, `package.json`
 
-- [ ] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3.  
-  Done:
+- [x] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3. — 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`, `scripts/people_candidates_csv.test.ts`, `package.json`
 
 - [ ] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2.  
   Done:
@@ -109,7 +109,7 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); B1+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---

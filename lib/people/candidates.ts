@@ -587,3 +587,37 @@ export async function updateCandidate(
 
   return { ok: true, data: updated };
 }
+
+const EMAIL_INDEX_PAGE = 500;
+const EMAIL_INDEX_MAX_ROWS = 10_000;
+
+/** Lowercased email → candidate id for non-archived rows in this tenant. */
+export async function listActiveCandidateEmailIndex(
+  ctx: PeopleTenantContext,
+): Promise<{ ok: true; data: Map<string, string> } | CandidateErr> {
+  const index = new Map<string, string>();
+  let offset = 0;
+
+  while (offset < EMAIL_INDEX_MAX_ROWS) {
+    const { data, error } = await ctx.supabase
+      .from("candidates")
+      .select("id, email")
+      .eq("team_id", ctx.teamId)
+      .is("archived_at", null)
+      .order("created_at", { ascending: true })
+      .range(offset, offset + EMAIL_INDEX_PAGE - 1);
+
+    if (error) return fail(500, error.message);
+    const rows = (data ?? []) as { id: string; email: string | null }[];
+    for (const row of rows) {
+      if (typeof row.email !== "string") continue;
+      const key = row.email.trim().toLowerCase();
+      if (!key) continue;
+      index.set(key, row.id);
+    }
+    if (rows.length < EMAIL_INDEX_PAGE) break;
+    offset += EMAIL_INDEX_PAGE;
+  }
+
+  return { ok: true, data: index };
+}

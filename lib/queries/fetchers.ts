@@ -645,3 +645,42 @@ export async function updateCandidateMutation(
   }
   return json.data;
 }
+
+export type CandidateCsvImportBody = {
+  csv: string;
+  job_id: string;
+  mapping?: CsvColumnMapping;
+};
+
+export type CandidateCsvImportResult = CsvImportPlan & {
+  message?: string;
+  attached?: number;
+};
+
+export async function previewCandidateCsv(
+  body: CandidateCsvImportBody,
+): Promise<CandidateCsvImportResult> {
+  const res = await authenticatedFetch("/api/people/candidates/import/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<CandidateCsvImportResult & { error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (json.ok !== true) throw new Error(json.error ?? "CSV preview failed");
+  return json;
+}
+
+export async function importCandidateCsv(
+  body: CandidateCsvImportBody,
+): Promise<CandidateCsvImportResult> {
+  const res = await authenticatedFetch("/api/people/candidates/import", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<CandidateCsvImportResult & { error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (json.ok !== true) throw new Error(json.error ?? "CSV import failed");
+  return json;
+}
