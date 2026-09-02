@@ -1,13 +1,18 @@
 /**
- * Wave 1 D3 — people.match worker scores candidate_jobs via D2 engine.
+ * Wave 1 D3 + D4 — people.match worker scores and explains candidate_jobs.
  * Run: npx tsx scripts/people_match_worker.test.ts  (or `npm run test:people-match-worker`)
  */
 
 import Module from "node:module";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
+process.env.AI_PROVIDER = "mock";
+delete process.env.OPENAI_API_KEY;
+
 import { DEFAULT_SCORING_WEIGHTS } from "@/lib/people/scoring-weights";
 import { SCORING_VERSION } from "@/lib/people/score";
+import { PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION } from "@/lib/people/match-explanation";
 
 const moduleWithLoad = Module as unknown as { _load: (...args: unknown[]) => unknown };
 const origLoad = moduleWithLoad._load;
@@ -365,7 +370,7 @@ const scoringVersionSql = readFileSync(
     assert(tables.background_jobs[0].status === "failed", "bg failed");
   });
 
-  await check("handlePeopleMatch scores candidate_jobs and clears ai fields", async () => {
+  await check("handlePeopleMatch scores candidate_jobs and fills mock ai explanation", async () => {
     resetTables();
     seedJob();
     seedCandidate();
@@ -389,16 +394,18 @@ const scoringVersionSql = readFileSync(
     };
     assert(weightsUsed.weights_version === 1, "weights_version");
     assert(weightsUsed.weights.technical_fit === DEFAULT_SCORING_WEIGHTS.technical_fit, "weights");
-    assert(cj.ai_explanation === null, "ai_explanation cleared");
-    assert(cj.ai_model === null, "ai_model cleared");
-    assert(cj.ai_prompt_version === null, "ai_prompt_version cleared");
+    const explanation = cj.ai_explanation as { summary?: string; recommendation?: string };
+    assert(typeof explanation.summary === "string", "ai_explanation summary");
+    assert(typeof explanation.recommendation === "string", "ai_explanation recommendation");
+    assert(cj.ai_model === "gpt-4o-mini", "ai_model set");
+    assert(cj.ai_prompt_version === PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION, "ai_prompt_version");
     const progress = tables.background_jobs[0].progress as Record<string, unknown>;
     assert((cj.match_components as unknown[]).length === 6, "six components");
     assert(progress.processed === 1, "progress processed");
     assert(progress.scored === 1, "progress scored");
     assert(progress.insufficient === 0, "progress insufficient");
     assert(progress.skipped === 0, "progress skipped");
-    assert(progress.total === 1, "progress total");
+    assert(progress.explained === 1, "progress explained");
     assert(progress.scoring_version === SCORING_VERSION, "progress scoring_version");
     assert(progress.scoring_weights_version === 1, "progress weights version");
   });
@@ -426,6 +433,8 @@ const scoringVersionSql = readFileSync(
     assert(typeof cj.insufficient_reason === "string", "reason set");
     assert(cj.match_components === null, "no components");
     assert(cj.scoring_version === SCORING_VERSION, "version still set");
+    const explanation = cj.ai_explanation as { recommendation?: string };
+    assert(explanation.recommendation === "insufficient_data", "insufficient explanation");
     const weightsUsed = cj.match_weights_used as { weights_version: number };
     assert(weightsUsed.weights_version === 1, "weights envelope set");
   });
@@ -466,6 +475,7 @@ const scoringVersionSql = readFileSync(
     assert(meta.scored === 1, "scored count");
     assert(meta.scoring_version === SCORING_VERSION, "scoring_version in metadata");
     assert(meta.scoring_weights_version === 1, "scoring_weights_version in metadata");
+    assert(meta.explained === 1, "explained in metadata");
     assert(!("email" in meta), "no email");
     assert(!("full_name" in meta), "no full_name");
   });
@@ -663,6 +673,72 @@ const scoringVersionSql = readFileSync(
     );
     assert(outcome.status === "completed", "completed via dispatch");
     assert(tables.candidate_jobs[0].scoring_version === SCORING_VERSION, "scored");
+  });
+
+  await check("explain-only phase does not rewrite scores", async () => {
+    resetTables();
+    seedJob();
+    seedCandidate();
+    seedCandidateJob({
+      match_score: 42,
+      scoring_version: SCORING_VERSION,
+      data_quality: "sufficient",
+      match_components: [{ key: "technical_fit" }],
+      ai_explanation: null,
+    });
+    seedBackgroundJob({
+      payload: { job_id: JOB_ID, phase: "explain" },
+      progress: {
+        processed: 1,
+        scored: 1,
+        insufficient: 0,
+        skipped: 0,
+        total: 1,
+        scoring_version: SCORING_VERSION,
+        scoring_weights_version: 1,
+        explained: 0,
+        explain_failed: 0,
+        explain_skipped: 0,
+        prompt_version: PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION,
+      },
+    });
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", "completed");
+    const cj = tables.candidate_jobs[0];
+    assert(cj.match_score === 42, "score unchanged");
+    assert(cj.scoring_version === SCORING_VERSION, "version unchanged");
+    const explanation = cj.ai_explanation as { summary?: string };
+    assert(typeof explanation.summary === "string", "explanation filled");
+  });
+
+  await check("ai_not_configured stores error without nullifying score", async () => {
+    const prevProvider = process.env.AI_PROVIDER;
+    delete process.env.AI_PROVIDER;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.AZURE_OPENAI_API_KEY;
+    delete process.env.AZURE_API_KEY;
+
+    resetTables();
+    seedJob();
+    seedCandidate();
+    seedCandidateJob();
+    seedBackgroundJob();
+
+    const { handlePeopleMatch: handleFresh } = await import("@/lib/people/match-worker");
+    const outcome = await handleFresh(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", "completed");
+    const cj = tables.candidate_jobs[0];
+    assert(typeof cj.match_score === "number", "score still set");
+    const explanation = cj.ai_explanation as { error?: string };
+    assert(explanation.error === "ai_not_configured", "ai_not_configured error");
+
+    process.env.AI_PROVIDER = prevProvider ?? "mock";
   });
 
   console.log(`\npeople-match-worker: ${passed} checks passed`);

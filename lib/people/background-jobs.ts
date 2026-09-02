@@ -318,6 +318,35 @@ export async function setProgress(
   return !error && !!data;
 }
 
+/** Yield explain work across invocations without failing the job or burning attempt budget. */
+export async function requeueExplainContinuation(
+  supabase: SupabaseClient,
+  jobId: string,
+  teamId: string,
+  peopleJobId: string,
+  progress: Record<string, unknown>,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({
+      status: "queued",
+      attempts: 0,
+      error: null,
+      progress,
+      locked_at: null,
+      locked_by: null,
+      run_after: new Date().toISOString(),
+      payload: { job_id: peopleJobId, phase: "explain" },
+    })
+    .eq("id", jobId)
+    .eq("team_id", teamId)
+    .eq("status", "running")
+    .select("id")
+    .maybeSingle();
+
+  return !error && !!data;
+}
+
 export async function dispatchBackgroundJob(
   supabase: SupabaseClient,
   job: BackgroundJob,

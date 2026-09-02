@@ -1,14 +1,25 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { explainMatchScore } from "@/lib/ai/people-explain";
+import { isMockMode } from "@/lib/ai/provider";
 import { writeSystemAuditEvent } from "@/lib/audit";
 import {
   complete,
   fail,
   refreshLock,
+  requeueExplainContinuation,
   setProgress,
   type BackgroundJob,
 } from "@/lib/people/background-jobs";
+import {
+  buildAiExplanationErrorPatch,
+  buildAiExplanationPatch,
+  hasValidMatchExplanation,
+  PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION,
+  type ExplainCandidateContext,
+  type ExplainJobContext,
+} from "@/lib/people/match-explanation";
 import {
   isScoreSufficient,
   scoreCandidate,
@@ -18,9 +29,10 @@ import {
   type ScoreResult,
 } from "@/lib/people/score";
 import { parseStoredWeights } from "@/lib/people/scoring-weights";
-import type { RemotePolicy } from "@/types";
+import type { CandidateJobDataQuality, RemotePolicy } from "@/types";
 
 export const MATCH_BATCH_SIZE = 100;
+export const MAX_EXPLAINS_PER_INVOCATION = 25;
 
 type CandidateScoreRow = {
   id: string;
@@ -37,8 +49,21 @@ type CandidateJobRow = {
   candidate_id: string;
 };
 
+type CandidateJobExplainRow = {
+  id: string;
+  candidate_id: string;
+  match_score: unknown;
+  match_components: unknown;
+  match_weights_used: unknown;
+  scoring_version: string | null;
+  data_quality: CandidateJobDataQuality;
+  insufficient_reason: string | null;
+  ai_explanation: unknown;
+};
+
 type JobScoreRow = {
   id: string;
+  title: string | null;
   required_skills: unknown;
   preferred_skills: unknown;
   experience_min_years: unknown;
@@ -58,6 +83,10 @@ export type PeopleMatchProgress = {
   total: number;
   scoring_version: string;
   scoring_weights_version: number;
+  explained: number;
+  explain_failed: number;
+  explain_skipped: number;
+  prompt_version: string;
 };
 
 function parsePeopleMatchJobId(payload: Record<string, unknown>): string | null {
@@ -65,6 +94,10 @@ function parsePeopleMatchJobId(payload: Record<string, unknown>): string | null 
   if (typeof jobId !== "string") return null;
   const trimmed = jobId.trim();
   return trimmed || null;
+}
+
+function isExplainOnlyPhase(payload: Record<string, unknown>): boolean {
+  return payload.phase === "explain";
 }
 
 function coerceSkills(value: unknown): string[] {
@@ -100,6 +133,29 @@ function toScoreJobInput(job: JobScoreRow): ScoreJobInput {
     seniority: job.seniority,
     location: job.location,
     remote_policy: job.remote_policy,
+  };
+}
+
+function toExplainJobContext(job: JobScoreRow): ExplainJobContext {
+  return {
+    title: job.title,
+    required_skills: coerceSkills(job.required_skills),
+    preferred_skills: coerceSkills(job.preferred_skills),
+    experience_min_years: coerceYears(job.experience_min_years),
+    experience_max_years: coerceYears(job.experience_max_years),
+    seniority: job.seniority,
+    location: job.location,
+    remote_policy: job.remote_policy,
+  };
+}
+
+function toExplainCandidateContext(candidate: CandidateScoreRow): ExplainCandidateContext {
+  return {
+    headline: candidate.headline,
+    current_role: candidate.current_role,
+    experience_years: coerceYears(candidate.experience_years),
+    skills: coerceSkills(candidate.skills),
+    location: candidate.location,
   };
 }
 
@@ -146,7 +202,163 @@ function emptyProgress(weightsVersion: number, total = 0): PeopleMatchProgress {
     total,
     scoring_version: SCORING_VERSION,
     scoring_weights_version: weightsVersion,
+    explained: 0,
+    explain_failed: 0,
+    explain_skipped: 0,
+    prompt_version: PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION,
   };
+}
+
+function readPriorProgress(
+  job: BackgroundJob,
+  weightsVersion: number,
+  total: number,
+): PeopleMatchProgress {
+  const p = job.progress ?? {};
+  const num = (key: string): number =>
+    typeof p[key] === "number" && Number.isFinite(p[key]) ? (p[key] as number) : 0;
+
+  return {
+    processed: num("processed"),
+    scored: num("scored"),
+    insufficient: num("insufficient"),
+    skipped: num("skipped"),
+    total: typeof p.total === "number" ? p.total : total,
+    scoring_version:
+      typeof p.scoring_version === "string" ? p.scoring_version : SCORING_VERSION,
+    scoring_weights_version:
+      typeof p.scoring_weights_version === "number" ? p.scoring_weights_version : weightsVersion,
+    explained: num("explained"),
+    explain_failed: num("explain_failed"),
+    explain_skipped: num("explain_skipped"),
+    prompt_version: PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION,
+  };
+}
+
+function buildProgressSnapshot(input: PeopleMatchProgress): PeopleMatchProgress {
+  return { ...input };
+}
+
+async function runExplainPhase(
+  supabase: SupabaseClient,
+  job: BackgroundJob,
+  targetJobId: string,
+  teamId: string,
+  peopleJob: JobScoreRow,
+  progress: PeopleMatchProgress,
+): Promise<{ progress: PeopleMatchProgress; yielded: boolean }> {
+  const explainCap = isMockMode() ? Number.POSITIVE_INFINITY : MAX_EXPLAINS_PER_INVOCATION;
+  let explainedThisInvocation = 0;
+  let yielded = false;
+  let offset = 0;
+
+  const jobContext = toExplainJobContext(peopleJob);
+
+  while (true) {
+    const { data: applicationRows, error: batchError } = await supabase
+      .from("candidate_jobs")
+      .select(
+        "id, candidate_id, match_score, match_components, match_weights_used, scoring_version, data_quality, insufficient_reason, ai_explanation",
+      )
+      .eq("job_id", targetJobId)
+      .eq("team_id", teamId)
+      .in("data_quality", ["sufficient", "insufficient"])
+      .order("id", { ascending: true })
+      .range(offset, offset + MATCH_BATCH_SIZE - 1);
+
+    if (batchError) {
+      throw new Error("explain_write_failed");
+    }
+
+    const rows = (applicationRows ?? []) as CandidateJobExplainRow[];
+    if (rows.length === 0) break;
+
+    const candidateIds = [...new Set(rows.map((row) => row.candidate_id))];
+    const { data: candidateRows, error: candidateError } = await supabase
+      .from("candidates")
+      .select(
+        'id, skills, experience_years, "current_role", headline, location, archived_at',
+      )
+      .eq("team_id", teamId)
+      .in("id", candidateIds);
+
+    if (candidateError) {
+      throw new Error("explain_write_failed");
+    }
+
+    const candidateById = new Map(
+      ((candidateRows ?? []) as CandidateScoreRow[]).map((candidate) => [
+        candidate.id,
+        candidate,
+      ]),
+    );
+
+    for (const row of rows) {
+      if (explainedThisInvocation >= explainCap) {
+        yielded = true;
+        break;
+      }
+
+      if (hasValidMatchExplanation(row.ai_explanation)) {
+        progress.explain_skipped += 1;
+        continue;
+      }
+
+      const candidate = candidateById.get(row.candidate_id);
+      if (!candidate || candidate.archived_at) {
+        progress.explain_skipped += 1;
+        continue;
+      }
+
+      const matchScore =
+        typeof row.match_score === "number" && Number.isFinite(row.match_score)
+          ? row.match_score
+          : null;
+
+      const result = await explainMatchScore({
+        job: jobContext,
+        candidate: toExplainCandidateContext(candidate),
+        scoring: {
+          scoring_version: row.scoring_version,
+          data_quality: row.data_quality,
+          match_score: matchScore,
+          insufficient_reason: row.insufficient_reason,
+          match_components: row.match_components,
+          match_weights_used: row.match_weights_used,
+        },
+        teamId,
+        workspaceId: job.workspaceId,
+        supabase,
+      });
+
+      const patch =
+        result.status === "success"
+          ? buildAiExplanationPatch(result.explanation, result.model)
+          : buildAiExplanationErrorPatch(result.error, result.message, result.model);
+
+      const { error: updateError } = await supabase
+        .from("candidate_jobs")
+        .update(patch)
+        .eq("id", row.id)
+        .eq("team_id", teamId);
+
+      if (updateError) {
+        throw new Error("explain_write_failed");
+      }
+
+      if (result.status === "success") progress.explained += 1;
+      else progress.explain_failed += 1;
+
+      explainedThisInvocation += 1;
+      await refreshLock(supabase, job.id, job.lockedBy ?? undefined);
+      await setProgress(supabase, job.id, buildProgressSnapshot(progress));
+    }
+
+    if (yielded || rows.length < MATCH_BATCH_SIZE) break;
+    offset += MATCH_BATCH_SIZE;
+  }
+
+  return { progress, yielded };
 }
 
 export async function handlePeopleMatch(
@@ -159,12 +371,13 @@ export async function handlePeopleMatch(
     return { status: "failed", error: "invalid_payload" };
   }
 
+  const explainOnly = isExplainOnlyPhase(job.payload);
   const teamId = job.teamId;
 
   const { data: jobRow, error: jobError } = await supabase
     .from("jobs")
     .select(
-      "id, required_skills, preferred_skills, experience_min_years, experience_max_years, seniority, location, remote_policy, scoring_weights, scoring_weights_version",
+      "id, title, required_skills, preferred_skills, experience_min_years, experience_max_years, seniority, location, remote_policy, scoring_weights, scoring_weights_version",
     )
     .eq("id", targetJobId)
     .eq("team_id", teamId)
@@ -199,108 +412,130 @@ export async function handlePeopleMatch(
   }
 
   const total = (idRows ?? []).length;
-  let processed = 0;
-  let scored = 0;
-  let insufficient = 0;
-  let skipped = 0;
-  let offset = 0;
+  let progress = explainOnly
+    ? readPriorProgress(job, weightsVersion, total)
+    : emptyProgress(weightsVersion, total);
 
-  while (true) {
-    const { data: applicationRows, error: batchError } = await supabase
-      .from("candidate_jobs")
-      .select("id, candidate_id")
-      .eq("job_id", targetJobId)
-      .eq("team_id", teamId)
-      .order("id", { ascending: true })
-      .range(offset, offset + MATCH_BATCH_SIZE - 1);
+  if (!explainOnly) {
+    let processed = 0;
+    let scored = 0;
+    let insufficient = 0;
+    let skipped = 0;
+    let offset = 0;
 
-    if (batchError) {
-      await fail(supabase, job.id, "match_write_failed");
-      return { status: "failed", error: "match_write_failed" };
-    }
-
-    const rows = (applicationRows ?? []) as CandidateJobRow[];
-    if (rows.length === 0) break;
-
-    const candidateIds = [...new Set(rows.map((row) => row.candidate_id))];
-    const { data: candidateRows, error: candidateError } = await supabase
-      .from("candidates")
-      .select(
-        'id, skills, experience_years, "current_role", headline, location, archived_at',
-      )
-      .eq("team_id", teamId)
-      .in("id", candidateIds);
-
-    if (candidateError) {
-      await fail(supabase, job.id, "match_write_failed");
-      return { status: "failed", error: "match_write_failed" };
-    }
-
-    const candidateById = new Map(
-      ((candidateRows ?? []) as CandidateScoreRow[]).map((candidate) => [
-        candidate.id,
-        candidate,
-      ]),
-    );
-
-    for (const row of rows) {
-      processed += 1;
-      const candidate = candidateById.get(row.candidate_id);
-      if (!candidate || candidate.archived_at) {
-        skipped += 1;
-        continue;
-      }
-
-      const result = scoreCandidate(
-        toScoreCandidateInput(candidate),
-        toScoreJobInput(peopleJob),
-        weights,
-      );
-      const patch = buildCandidateJobPatch(result, weightsVersion);
-
-      const { error: updateError } = await supabase
+    while (true) {
+      const { data: applicationRows, error: batchError } = await supabase
         .from("candidate_jobs")
-        .update(patch)
-        .eq("id", row.id)
-        .eq("team_id", teamId);
+        .select("id, candidate_id")
+        .eq("job_id", targetJobId)
+        .eq("team_id", teamId)
+        .order("id", { ascending: true })
+        .range(offset, offset + MATCH_BATCH_SIZE - 1);
 
-      if (updateError) {
+      if (batchError) {
         await fail(supabase, job.id, "match_write_failed");
         return { status: "failed", error: "match_write_failed" };
       }
 
-      if (isScoreSufficient(result)) scored += 1;
-      else insufficient += 1;
+      const rows = (applicationRows ?? []) as CandidateJobRow[];
+      if (rows.length === 0) break;
+
+      const candidateIds = [...new Set(rows.map((row) => row.candidate_id))];
+      const { data: candidateRows, error: candidateError } = await supabase
+        .from("candidates")
+        .select(
+          'id, skills, experience_years, "current_role", headline, location, archived_at',
+        )
+        .eq("team_id", teamId)
+        .in("id", candidateIds);
+
+      if (candidateError) {
+        await fail(supabase, job.id, "match_write_failed");
+        return { status: "failed", error: "match_write_failed" };
+      }
+
+      const candidateById = new Map(
+        ((candidateRows ?? []) as CandidateScoreRow[]).map((candidate) => [
+          candidate.id,
+          candidate,
+        ]),
+      );
+
+      for (const row of rows) {
+        processed += 1;
+        const candidate = candidateById.get(row.candidate_id);
+        if (!candidate || candidate.archived_at) {
+          skipped += 1;
+          continue;
+        }
+
+        const result = scoreCandidate(
+          toScoreCandidateInput(candidate),
+          toScoreJobInput(peopleJob),
+          weights,
+        );
+        const patch = buildCandidateJobPatch(result, weightsVersion);
+
+        const { error: updateError } = await supabase
+          .from("candidate_jobs")
+          .update(patch)
+          .eq("id", row.id)
+          .eq("team_id", teamId);
+
+        if (updateError) {
+          await fail(supabase, job.id, "match_write_failed");
+          return { status: "failed", error: "match_write_failed" };
+        }
+
+        if (isScoreSufficient(result)) scored += 1;
+        else insufficient += 1;
+      }
+
+      progress = {
+        ...progress,
+        processed,
+        scored,
+        insufficient,
+        skipped,
+        total,
+      };
+      await refreshLock(supabase, job.id, job.lockedBy ?? undefined);
+      await setProgress(supabase, job.id, buildProgressSnapshot(progress));
+
+      if (rows.length < MATCH_BATCH_SIZE) break;
+      offset += MATCH_BATCH_SIZE;
     }
-
-    const progress: PeopleMatchProgress = {
-      processed,
-      scored,
-      insufficient,
-      skipped,
-      total,
-      scoring_version: SCORING_VERSION,
-      scoring_weights_version: weightsVersion,
-    };
-    await refreshLock(supabase, job.id, job.lockedBy ?? undefined);
-    await setProgress(supabase, job.id, progress);
-
-    if (rows.length < MATCH_BATCH_SIZE) break;
-    offset += MATCH_BATCH_SIZE;
   }
 
-  const finalProgress =
-    total === 0
-      ? emptyProgress(weightsVersion, 0)
-      : ({
-          processed,
-          scored,
-          insufficient,
-          skipped,
-          total,
-          scoring_version: SCORING_VERSION,
-          scoring_weights_version: weightsVersion,
-        } satisfies PeopleMatchProgress);
+  let explainOutcome: { progress: PeopleMatchProgress; yielded: boolean };
+  try {
+    explainOutcome = await runExplainPhase(
+      supabase,
+      job,
+      targetJobId,
+      teamId,
+      peopleJob,
+      progress,
+    );
+  } catch {
+    await fail(supabase, job.id, "explain_write_failed");
+    return { status: "failed", error: "explain_write_failed" };
+  }
+
+  const finalProgress = explainOutcome.progress;
+
+  if (explainOutcome.yielded) {
+    const requeued = await requeueExplainContinuation(
+      supabase,
+      job.id,
+      teamId,
+      targetJobId,
+      buildProgressSnapshot(finalProgress),
+    );
+    return requeued
+      ? { status: "completed" }
+      : { status: "failed", error: "requeue_failed" };
+  }
 
   const audit = await writeSystemAuditEvent(
     {
@@ -322,6 +557,9 @@ export async function handlePeopleMatch(
         total: finalProgress.total,
         scoring_version: SCORING_VERSION,
         scoring_weights_version: weightsVersion,
+        explained: finalProgress.explained,
+        explain_failed: finalProgress.explain_failed,
+        prompt_version: PEOPLE_MATCH_EXPLAIN_PROMPT_VERSION,
       },
     },
   );
@@ -331,6 +569,6 @@ export async function handlePeopleMatch(
     return { status: "failed", error: "audit_failed" };
   }
 
-  const ok = await complete(supabase, job.id, finalProgress);
+  const ok = await complete(supabase, job.id, buildProgressSnapshot(finalProgress));
   return ok ? { status: "completed" } : { status: "failed", error: "complete_failed" };
 }

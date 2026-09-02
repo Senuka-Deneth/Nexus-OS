@@ -70,8 +70,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2. — 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/people/jobs.ts`, `lib/audit.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`
   Done: 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/people/jobs.ts`, `lib/audit.ts`, `app/api/internal/people/jobs/run/route.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`, `scripts/people_background_jobs.test.ts`, `scripts/audit.test.ts`, `types/index.ts`, `package.json`
 
-- [ ] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3.  
-  Done:
+- [x] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3. — 2026-09-02 — `lib/ai/people-explain.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `scripts/people_match_explain.test.ts`
+  Done: 2026-09-02 — `lib/ai/people-explain.ts`, `lib/ai/provider.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `types/index.ts`, `scripts/people_match_explain.test.ts`, `scripts/people_match_worker.test.ts`, `scripts/ai_provider.test.ts`, `package.json`
 
 - [ ] **D5** Candidate ranking UI (advisory; manual override). Depends: D4.  
   Done:

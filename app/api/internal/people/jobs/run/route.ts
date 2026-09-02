@@ -16,17 +16,18 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * People background job worker (Wave 1 D1 + D3).
+ * People background job worker (Wave 1 D1 + D3 + D4).
  *
  * Claims queued `background_jobs` rows and dispatches by `kind`. For `people.match`,
- * D3 runs deterministic D2 scoring in-process (`lib/people/match-worker.ts`) and writes
- * scores onto `candidate_jobs`. n8n/cron should only POST this route — do not compute
- * match scores in n8n.
+ * D3 runs deterministic D2 scoring in-process (`lib/people/match-worker.ts`), then D4
+ * fills advisory `ai_explanation` via `lib/ai/people-explain.ts` without rewriting scores.
+ * n8n/cron should only POST this route — do not compute match scores or call OpenAI in n8n.
  *
  * Scheduling (human): configure an n8n schedule or Vercel cron to POST this route with
  * `Authorization: Bearer <N8N_BOOTSTRAP_TOKEN>` (legacy `N8N_INGEST_TOKEN` accepted during
  * migration).
  */
+export const maxDuration = 300;
 export async function POST(request: Request) {
   const limited = rateLimit(request, "api:internal:people:jobs-run", 30, 60_000);
   if (limited) return limited;

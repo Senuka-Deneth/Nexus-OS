@@ -333,6 +333,28 @@ export const CANDIDATE_JOB_DATA_QUALITIES = [
 ] as const;
 export type CandidateJobDataQuality = (typeof CANDIDATE_JOB_DATA_QUALITIES)[number];
 
+export const MATCH_RECOMMENDATIONS = [
+  "strong_match",
+  "possible_match",
+  "weak_match",
+  "insufficient_data",
+] as const;
+export type MatchRecommendation = (typeof MATCH_RECOMMENDATIONS)[number];
+
+export type MatchExplanation = {
+  summary: string;
+  strengths: string[];
+  gaps: string[];
+  evidence: string[];
+  concerns: string[];
+  recommendation: MatchRecommendation;
+};
+
+export type MatchExplanationError = {
+  error: "malformed_output" | "ai_not_configured" | "provider_error";
+  message: string;
+};
+
 /** A row from `candidate_jobs` (application + scoring columns). */
 export interface CandidateJob {
   id: string;
@@ -350,7 +372,7 @@ export interface CandidateJob {
   scoring_version: string | null;
   data_quality: CandidateJobDataQuality;
   insufficient_reason: string | null;
-  ai_explanation: unknown | null;
+  ai_explanation: MatchExplanation | MatchExplanationError | null;
   ai_model: string | null;
   ai_prompt_version: string | null;
   manual_rank_override: number | null;
