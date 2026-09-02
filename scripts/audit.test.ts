@@ -218,6 +218,26 @@ const baseEvent = {
   passed += 1;
   console.log("  ok  null workspace is allowed");
 
+  const { writeSystemAuditEvent } = await import("@/lib/audit");
+
+  inserted.length = 0;
+  const systemOk = await writeSystemAuditEvent(
+    { supabase: fakeClient as never, teamId: TEAM_ID, workspaceId: WORKSPACE_ID },
+    {
+      domain: "people",
+      action: "match_scored",
+      entityType: "job",
+      entityId: ENTITY_ID,
+      metadata: { processed: 2, scoring_version: "people.match.v1", weights_version: 1 },
+    },
+  );
+  assert(systemOk.ok === true, "system write ok");
+  assert(inserted.length === 1, "one system row");
+  assert(inserted[0].actor_user_id === null, "null actor for system write");
+  assert(inserted[0].action === "match_scored", "action");
+  passed += 1;
+  console.log("  ok  writeSystemAuditEvent allows null actor for service-role writes");
+
   console.log(`audit.test.ts: ${passed} checks passed`);
 })().catch((err) => {
   console.error(err);

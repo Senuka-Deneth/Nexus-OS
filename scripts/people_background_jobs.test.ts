@@ -63,21 +63,27 @@ function isClaimable(row: Row): boolean {
 function makeServiceClient() {
   return {
     from(table: string) {
-      assert(table === "background_jobs", `unexpected table ${table}`);
+      if (table !== "background_jobs" && table !== "jobs" && table !== "candidates" && table !== "candidate_jobs" && table !== "audit_events") {
+        assert(false, `unexpected table ${table}`);
+      }
+      const store =
+        table === "background_jobs"
+          ? backgroundJobsTable
+          : [];
       const filters: Array<(r: Row) => boolean> = [];
       let insertRow: Row | null = null;
       let updatePatch: Row | null = null;
       let inStatuses: string[] | null = null;
 
       const applyFilters = () =>
-        backgroundJobsTable.filter((r) => filters.every((f) => f(r)));
+        store.filter((r) => filters.every((f) => f(r)));
 
       const finishInsert = () => {
         if (!insertRow) return { data: null, error: null };
         const key = insertRow.idempotency_key;
         if (
           typeof key === "string" &&
-          backgroundJobsTable.some(
+          store.some(
             (r) => r.team_id === insertRow!.team_id && r.idempotency_key === key,
           )
         ) {
@@ -97,12 +103,12 @@ function makeServiceClient() {
           updated_at: now,
           ...insertRow,
         };
-        backgroundJobsTable.push(row);
+        store.push(row);
         return { data: { ...row }, error: null };
       };
 
       const finishUpdate = () => {
-        const hit = backgroundJobsTable.find((r) => filters.every((f) => f(r)));
+        const hit = store.find((r) => filters.every((f) => f(r)));
         if (!hit || !updatePatch) {
           return { data: null, error: { code: "PGRST116", message: "not found" } };
         }
@@ -143,6 +149,22 @@ function makeServiceClient() {
             data: rows[0] ? { ...rows[0] } : null,
             error: null,
           });
+        },
+        then(
+          resolve: (v: unknown) => unknown,
+          reject?: (e: unknown) => unknown,
+        ) {
+          if (insertRow) {
+            return Promise.resolve(finishInsert()).then(resolve, reject);
+          }
+          if (updatePatch) {
+            return Promise.resolve(finishUpdate()).then(resolve, reject);
+          }
+          const rows = applyFilters();
+          return Promise.resolve({ data: rows.map((r) => ({ ...r })), error: null }).then(
+            resolve,
+            reject,
+          );
         },
       });
       return chain;
@@ -278,20 +300,16 @@ check("migration defines claim_background_jobs with skip locked and service_role
     assert(backgroundJobsTable.length === 1, "one row");
   });
 
-  await asyncCheck("claim + people.match stub completes without candidate_jobs writes", async () => {
+  await asyncCheck("dispatch people.match fails closed without job row", async () => {
     resetJobs();
     await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
     const supabase = makeServiceClient();
     const claimed = await claim(supabase);
     assert(claimed.length === 1, "claimed one");
-    assert(claimed[0].status === "running", "running");
     const outcome = await dispatchBackgroundJob(supabase, claimed[0]);
-    assert(outcome.status === "completed", "completed");
-    const row = backgroundJobsTable[0];
-    assert(row.status === "completed", "row completed");
-    const progress = row.progress as Record<string, unknown>;
-    assert(progress.processed === 0, "processed 0");
-    assert(progress.note === "handler wired in D3", "stub note");
+    assert(outcome.status === "failed", "failed without job");
+    assert(outcome.error === "job_not_found", "job_not_found");
+    assert(backgroundJobsTable[0].status === "failed", "row failed");
   });
 
   await asyncCheck("unknown kind fails job", async () => {
@@ -451,7 +469,7 @@ check("migration defines claim_background_jobs with skip locked and service_role
     assert(json.claimed === false, "claimed false");
   });
 
-  await asyncCheck("run route claims stub people.match job", async () => {
+  await asyncCheck("run route claims people.match job (fails without job row)", async () => {
     resetJobs();
     await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
     const res = await postRun({ token: TOKEN });
@@ -459,15 +477,14 @@ check("migration defines claim_background_jobs with skip locked and service_role
       success?: boolean;
       claimed?: boolean;
       completed?: number;
-      jobs?: Array<{ status: string; kind: string }>;
+      failed?: number;
+      jobs?: Array<{ status: string; kind: string; error?: string }>;
     };
     assert(res.status === 200, `status ${res.status}`);
     assert(json.claimed === true, "claimed");
-    assert(json.completed === 1, "completed one");
+    assert(json.failed === 1, "failed one without job row");
     assert(json.jobs?.[0]?.kind === BACKGROUND_JOB_KINDS.peopleMatch, "kind");
-    assert(json.jobs?.[0]?.status === "completed", "completed status");
-    const progress = backgroundJobsTable[0].progress as Record<string, unknown>;
-    assert(progress.note === "handler wired in D3", "stub note on row");
+    assert(json.jobs?.[0]?.status === "failed", "failed status");
   });
 
   await asyncCheck("runBackgroundJobBatch aggregates counts", async () => {
@@ -476,8 +493,8 @@ check("migration defines claim_background_jobs with skip locked and service_role
     await enqueuePeopleMatchJob(tenantCtx, "44444444-4444-4444-8444-444444444444");
     const batch = await runBackgroundJobBatch(makeServiceClient(), { limit: 5 });
     assert(batch.claimed === 2, "claimed 2");
-    assert(batch.completed === 2, "completed 2");
-    assert(batch.failed === 0, "failed 0");
+    assert(batch.failed === 2, "failed 2 without job rows");
+    assert(batch.completed === 0, "completed 0");
   });
 
   console.log(`\npeople-background-jobs: ${passed} checks passed`);

@@ -67,8 +67,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3. — 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`
   Done: 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`, `scripts/people_candidates_csv.test.ts`, `package.json`
 
-- [ ] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2.  
-  Done:
+- [x] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2. — 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/audit.ts`, `lib/people/jobs.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`
+  Done: 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/audit.ts`, `lib/people/jobs.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`, `scripts/people_background_jobs.test.ts`, `scripts/audit.test.ts`, `scripts/people_jobs_api.test.ts`, `package.json`
 
 - [ ] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3.  
   Done:

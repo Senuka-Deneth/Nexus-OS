@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { handlePeopleMatch } from "@/lib/people/match-worker";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 
 export const BACKGROUND_JOB_KINDS = {
@@ -45,10 +46,7 @@ export const DEFAULT_LOCK_TTL_SECONDS = 120;
 
 const TABLE = "background_jobs";
 
-const PEOPLE_MATCH_STUB_PROGRESS = {
-  processed: 0,
-  note: "handler wired in D3",
-} as const;
+const REQUEUE_STATUSES: BackgroundJobStatus[] = ["completed", "failed", "cancelled"];
 
 function rowToJob(row: Record<string, unknown>): BackgroundJob {
   return {
@@ -82,13 +80,6 @@ function isUniqueViolation(error: { code?: string } | null): boolean {
 
 export function peopleMatchIdempotencyKey(jobId: string): string {
   return `${BACKGROUND_JOB_KINDS.peopleMatch}:${jobId.trim()}`;
-}
-
-function parsePeopleMatchPayload(payload: Record<string, unknown>): string | null {
-  const jobId = payload.job_id;
-  if (typeof jobId !== "string") return null;
-  const trimmed = jobId.trim();
-  return trimmed || null;
 }
 
 async function findByIdempotencyKey(
@@ -163,10 +154,45 @@ export async function enqueuePeopleMatchJob(
   const trimmed = jobId.trim();
   if (!trimmed) return { ok: false, status: 400, error: "job_id is required" };
 
+  const idempotencyKey = peopleMatchIdempotencyKey(trimmed);
+  const existing = await findByIdempotencyKey(ctx, idempotencyKey);
+  if (existing) {
+    if (existing.status === "queued" || existing.status === "running") {
+      return { ok: true, data: { job: existing, created: false } };
+    }
+
+    const { data, error } = await ctx.supabase
+      .from(TABLE)
+      .update({
+        status: "queued",
+        attempts: 0,
+        error: null,
+        progress: {},
+        locked_at: null,
+        locked_by: null,
+        run_after: new Date().toISOString(),
+        payload: { job_id: trimmed },
+      })
+      .eq("id", existing.id)
+      .eq("team_id", ctx.teamId)
+      .in("status", REQUEUE_STATUSES)
+      .select("*")
+      .maybeSingle();
+
+    if (error || !data) {
+      return { ok: false, status: 500, error: error?.message || "requeue_failed" };
+    }
+
+    return {
+      ok: true,
+      data: { job: rowToJob(data as Record<string, unknown>), created: false },
+    };
+  }
+
   return enqueue(ctx, {
     kind: BACKGROUND_JOB_KINDS.peopleMatch,
     payload: { job_id: trimmed },
-    idempotencyKey: peopleMatchIdempotencyKey(trimmed),
+    idempotencyKey,
   });
 }
 
@@ -257,6 +283,41 @@ export async function cancel(
   return !error && !!data;
 }
 
+export async function refreshLock(
+  supabase: SupabaseClient,
+  jobId: string,
+  lockedBy?: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({
+      locked_at: new Date().toISOString(),
+      locked_by: lockedBy?.trim() || "people-worker",
+    })
+    .eq("id", jobId)
+    .eq("status", "running")
+    .select("id")
+    .maybeSingle();
+
+  return !error && !!data;
+}
+
+export async function setProgress(
+  supabase: SupabaseClient,
+  jobId: string,
+  progress: Record<string, unknown>,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ progress })
+    .eq("id", jobId)
+    .eq("status", "running")
+    .select("id")
+    .maybeSingle();
+
+  return !error && !!data;
+}
+
 export async function dispatchBackgroundJob(
   supabase: SupabaseClient,
   job: BackgroundJob,
@@ -267,16 +328,7 @@ export async function dispatchBackgroundJob(
   }
 
   if (job.kind === BACKGROUND_JOB_KINDS.peopleMatch) {
-    const targetJobId = parsePeopleMatchPayload(job.payload);
-    if (!targetJobId) {
-      await fail(supabase, job.id, "invalid_payload");
-      return { status: "failed", error: "invalid_payload" };
-    }
-
-    const ok = await complete(supabase, job.id, { ...PEOPLE_MATCH_STUB_PROGRESS });
-    return ok
-      ? { status: "completed" }
-      : { status: "failed", error: "complete_failed" };
+    return handlePeopleMatch(supabase, job);
   }
 
   await fail(supabase, job.id, "unknown_kind");

@@ -34,12 +34,14 @@ type AuthMode = "ok" | "unauthorized" | "no_tenant";
 
 const jobsTable: Row[] = [];
 const auditEventsTable: Row[] = [];
+const backgroundJobsTable: Row[] = [];
 let authMode: AuthMode = "ok";
 let idSeq = 0;
 
 function resetState(): void {
   jobsTable.length = 0;
   auditEventsTable.length = 0;
+  backgroundJobsTable.length = 0;
   authMode = "ok";
   idSeq = 0;
 }
@@ -59,10 +61,13 @@ function tenantSupabase() {
           ? jobsTable
           : table === "audit_events"
             ? auditEventsTable
-            : [];
+            : table === "background_jobs"
+              ? backgroundJobsTable
+              : [];
       const filters: Array<(r: Row) => boolean> = [];
       let insertRow: Row | null = null;
       let updatePatch: Row | null = null;
+      let inStatuses: string[] | null = null;
       let range: { from: number; to: number } | null = null;
       let orderCol = "created_at";
       let orderAsc = false;
@@ -71,6 +76,20 @@ function tenantSupabase() {
 
       const finishInsert = () => {
         if (!insertRow) return { data: null, error: null };
+        if (table === "background_jobs") {
+          const key = insertRow.idempotency_key;
+          if (
+            typeof key === "string" &&
+            store.some(
+              (r) => r.team_id === insertRow!.team_id && r.idempotency_key === key,
+            )
+          ) {
+            return {
+              data: null,
+              error: { code: "23505", message: "background_jobs_team_idempotency_uidx" },
+            };
+          }
+        }
         const now = new Date().toISOString();
         idSeq += 1;
         const row: Row = {
@@ -90,6 +109,12 @@ function tenantSupabase() {
           return {
             data: null,
             error: { code: "PGRST116", message: "not found" },
+          };
+        }
+        if (inStatuses && !inStatuses.includes(String(hit.status))) {
+          return {
+            data: null,
+            error: { code: "PGRST116", message: "status mismatch" },
           };
         }
         Object.assign(hit, updatePatch, { updated_at: new Date().toISOString() });
@@ -124,6 +149,11 @@ function tenantSupabase() {
         },
         eq(col: string, val: unknown) {
           filters.push((r) => r[col] === val);
+          return chain;
+        },
+        in(col: string, vals: unknown[]) {
+          if (col === "status") inStatuses = vals as string[];
+          filters.push((r) => vals.includes(r[col]));
           return chain;
         },
         is(col: string, val: unknown) {
@@ -418,6 +448,12 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
         (e) => e.action === "update" && e.entity_type === "job" && e.entity_id === id,
       ),
       "weight change audited",
+    );
+    assert(backgroundJobsTable.length === 1, "people.match enqueued on weight bump");
+    assert(backgroundJobsTable[0].kind === "people.match", "match kind");
+    assert(
+      (backgroundJobsTable[0].payload as { job_id?: string })?.job_id === id,
+      "payload job_id",
     );
   });
 

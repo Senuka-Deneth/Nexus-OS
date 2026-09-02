@@ -6,6 +6,7 @@ import "server-only";
  */
 
 import { writeAuditEvent } from "@/lib/audit";
+import { enqueuePeopleMatchJob } from "@/lib/people/background-jobs";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import {
   DEFAULT_SCORING_WEIGHTS,
@@ -546,6 +547,7 @@ export async function updateJob(
   if (rangeErr) return rangeErr;
 
   const patch: Record<string, unknown> = { ...parsed.data.fields };
+  let weightsVersionBumped = false;
   if (parsed.data.fields.scoring_weights) {
     const previous = parseStoredWeights(existing.data.scoring_weights);
     const changed =
@@ -557,6 +559,7 @@ export async function updateJob(
           ? existing.data.scoring_weights_version
           : 1;
       patch.scoring_weights_version = currentVersion + 1;
+      weightsVersionBumped = true;
     }
   }
 
@@ -602,6 +605,11 @@ export async function updateJob(
       nextState,
     });
     if (!audit.ok) return fail(500, audit.error);
+  }
+
+  if (weightsVersionBumped) {
+    const matchJob = await enqueuePeopleMatchJob(ctx, updated.id);
+    if (!matchJob.ok) return fail(500, matchJob.error);
   }
 
   return { ok: true, data: updated };
