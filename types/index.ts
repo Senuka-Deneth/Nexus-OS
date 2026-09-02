@@ -539,6 +539,63 @@ export type PeopleEmailFollowUpApplyResult = {
   candidate_job: JobCandidateListItem | null;
 };
 
+export const CHAT_PROPOSED_ACTION_KINDS = [
+  "set_pipeline_stage",
+  "set_employment_status",
+] as const;
+export type ChatProposedActionKind =
+  (typeof CHAT_PROPOSED_ACTION_KINDS)[number];
+
+export const CHAT_PROPOSED_ACTION_STATUSES = [
+  "pending",
+  "confirmed",
+  "cancelled",
+  "expired",
+  "failed",
+] as const;
+export type ChatProposedActionStatus =
+  (typeof CHAT_PROPOSED_ACTION_STATUSES)[number];
+
+export const CHAT_ACTION_DECISIONS = ["confirm", "cancel"] as const;
+export type ChatActionDecision = (typeof CHAT_ACTION_DECISIONS)[number];
+
+export type ChatProposedEmploymentPayload = {
+  employee_id: string;
+  employee_name: string;
+  from_status: EmploymentStatus;
+  employment_status: EmploymentStatus;
+};
+
+export type ChatProposedPipelinePayload = {
+  candidate_job_id: string;
+  candidate_id: string;
+  job_id: string;
+  candidate_name: string;
+  job_title: string;
+  from_stage: CandidateJobStage;
+  stage: CandidateJobStage;
+};
+
+export type ChatProposedActionPayload =
+  | ChatProposedEmploymentPayload
+  | ChatProposedPipelinePayload;
+
+/** Public Chat confirmation card. Entity UUIDs stay on the server row. */
+export type ChatProposedAction = {
+  id: string;
+  kind: ChatProposedActionKind;
+  status: ChatProposedActionStatus;
+  summary: string;
+  subject_name: string;
+  job_title: string | null;
+  from_label: string;
+  to_label: string;
+  requires_destructive_confirm: boolean;
+  error: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+};
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

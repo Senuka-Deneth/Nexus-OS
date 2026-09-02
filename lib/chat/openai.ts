@@ -2,10 +2,16 @@ import "server-only";
 
 import { AI_MODELS, AiNotConfiguredError, getOpenAiClient, isMockMode } from "@/lib/ai/provider";
 import {
+  executePeopleProposeTool,
+  isPeopleProposeToolName,
+  PEOPLE_PROPOSE_TOOLS,
+  type PeopleProposeContext,
+} from "@/lib/chat/people-propose";
+import {
   executePeopleReadTool,
+  isPeopleReadToolName,
   PEOPLE_READ_TOOLS,
 } from "@/lib/chat/people-tools";
-import type { PeopleTenantContext } from "@/lib/people/employees";
 
 /**
  * Server-only chat wrapper for the Revenue Analyst. Thin wrapper over `lib/ai/provider` — the
@@ -65,6 +71,20 @@ function finalizedToolCalls(acc: Map<number, ToolCallAcc>): OpenAiToolCall[] {
     .filter((call) => call.id.length > 0 && call.function.name.length > 0);
 }
 
+async function runPeopleChatTool(
+  name: string,
+  rawArgs: unknown,
+  ctx: PeopleProposeContext,
+): Promise<string> {
+  if (isPeopleReadToolName(name)) {
+    return executePeopleReadTool(name, rawArgs, ctx);
+  }
+  if (isPeopleProposeToolName(name)) {
+    return executePeopleProposeTool(name, rawArgs, ctx);
+  }
+  return JSON.stringify({ error: "Unknown tool" });
+}
+
 type StreamDelta = {
   content?: string | null;
   tool_calls?: Array<{
@@ -104,13 +124,13 @@ async function* streamChunks(
 
 /**
  * Stream the analyst reply as text deltas. Yields nothing but the assistant's content chunks.
- * When `peopleTools` is set (and not mock mode), runs up to two read-only People tool rounds
- * before streaming the final answer. First-token latency grows only when the model calls tools.
+ * When `peopleTools` is set (and not mock mode), runs up to two People tool rounds
+ * (G2 reads + G3 propose-only) before streaming the final answer.
  */
 export async function* streamAnalystReply(params: {
   system: string;
   history: ChatTurn[];
-  peopleTools?: PeopleTenantContext;
+  peopleTools?: PeopleProposeContext;
 }): AsyncGenerator<string, void, unknown> {
   if (isMockMode()) {
     yield "This is a mock analyst reply used for CI/tests.";
@@ -132,7 +152,7 @@ export async function* streamAnalystReply(params: {
         model,
         temperature: 0.3,
         stream: true,
-        tools: PEOPLE_READ_TOOLS,
+        tools: [...PEOPLE_READ_TOOLS, ...PEOPLE_PROPOSE_TOOLS],
         messages: messages as never,
       });
       const toolCalls = yield* streamChunks(stream, true);
@@ -144,7 +164,7 @@ export async function* streamAnalystReply(params: {
         tool_calls: toolCalls,
       });
       for (const call of toolCalls) {
-        const content = await executePeopleReadTool(
+        const content = await runPeopleChatTool(
           call.function.name,
           call.function.arguments,
           peopleTools,

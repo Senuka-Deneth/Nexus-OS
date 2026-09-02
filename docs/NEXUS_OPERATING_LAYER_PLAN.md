@@ -100,7 +100,8 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 - [x] **G2** People read tools in Chat (only if G1 Q&A is insufficient). Depends: G1. — 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `app/api/chat/route.ts`
   Done: 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_people_tools.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
-- [ ] **G3** Confirmation-gated People tools
+- [x] **G3** Confirmation-gated People tools — 2026-09-02 — `lib/chat/people-propose.ts`, `app/api/chat/actions/route.ts`, `components/chat/ProposedActionCard.tsx`
+  Done: 2026-09-02 — `supabase/migrations/20260902170000_chat_proposed_actions.sql`, `lib/chat/people-propose.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/api/chat/actions/route.ts`, `app/api/chat/actions/[id]/route.ts`, `app/chat/page.tsx`, `components/chat/ProposedActionCard.tsx`, `types/index.ts`, `scripts/chat_proposed_actions.test.ts`, `scripts/chat_proposed_actions_schema.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [ ] **H1** CandidateSource adapter (interface only)
 - [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
 - [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
@@ -110,7 +111,7 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); B1+ pending
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---
@@ -913,6 +914,22 @@ Add a closed allowlist of read-only People tools to the existing Revenue Analyst
 User/knowledge text cannot add tools. Unknown names return an error JSON. Do not import update/create/send helpers. Extend scripts/chat_prompt_injection.test.ts and add scripts/chat_people_tools.test.ts.
 
 No G3 confirmation-gated writes. No mini-router. No n8n. No migration.
+```
+
+---
+
+### G3 — Confirmation-gated People tools
+
+**Goal:** Chat may propose pipeline-stage and employment-status changes. Tools persist a pending row; they never mutate. A Confirm/Cancel card on `/chat` is the only executor. Action kinds live in code, not the prompt. No email send or draft from Chat.
+
+**Prompt:**
+
+```text
+Implement partition G3 only.
+
+Add propose_pipeline_stage and propose_employment_status to the existing Chat tool loop. Resolve by name like G2. Persist pending rows on chat_proposed_actions. Confirm/cancel via POST /api/chat/actions/[id] wrapping updateEmployee and updateCandidateJobPipeline. User text cannot confirm. No send_email, hire, or reject tool. No mini-router. No n8n.
+
+Extend scripts/chat_prompt_injection.test.ts. Add scripts/chat_proposed_actions.test.ts and schema tests.
 ```
 
 ---

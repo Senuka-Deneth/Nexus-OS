@@ -20,6 +20,7 @@
  *      displace the read-only People rules.
  *   7. Hostile candidate names in DATA SNAPSHOT.people stay JSON-encoded.
  *   8. People read-tool schema is the three G2 names; jailbreak cannot add tools.
+ *   9. People propose-tool schema is the two G3 names; send_email is absent.
  * If any of these fail, hostile customer text has a path to rewrite the
  * analyst's ground rules — treat as a release blocker.
  */
@@ -77,6 +78,9 @@ const HOSTILE_CANDIDATE_NAME =
   const { matchKnowledge } = await import("@/lib/embeddings/store");
   const { PEOPLE_READ_TOOLS, PEOPLE_READ_TOOL_NAMES } = await import(
     "@/lib/chat/people-tools"
+  );
+  const { PEOPLE_PROPOSE_TOOLS, PEOPLE_PROPOSE_TOOL_NAMES } = await import(
+    "@/lib/chat/people-propose"
   );
 
   const emptyPeople = emptyPeopleSnapshot();
@@ -209,8 +213,10 @@ const HOSTILE_CANDIDATE_NAME =
     assert(prompt.includes("updated an employee"), "employee mutation forbidden");
     assert(prompt.includes("Do not invent employees"), "empty People: do not invent");
     assert(prompt.includes("search_employees"), "read tools named in RULES");
+    assert(prompt.includes("propose_employment_status"), "propose tools named in RULES");
     const rulesBlock = prompt.slice(rulesAt, knowledgeAt);
     assert(!rulesBlock.includes("update_employee"), "update_employee is not a real tool");
+    assert(!rulesBlock.includes("send_email"), "send_email is not a real tool");
   });
 
   check("People read-tool schema is allowlisted (no write tools)", () => {
@@ -224,6 +230,20 @@ const HOSTILE_CANDIDATE_NAME =
       !names.includes("update_employee" as never) &&
         !names.includes("send_email" as never),
       "no write tools in schema",
+    );
+  });
+
+  check("People propose-tool schema is allowlisted (no send)", () => {
+    assert(PEOPLE_PROPOSE_TOOL_NAMES.length === 2, "two propose names");
+    const names = PEOPLE_PROPOSE_TOOLS.map((t) => t.function.name);
+    assert(
+      names.join(",") === "propose_pipeline_stage,propose_employment_status",
+      "propose schema names",
+    );
+    assert(
+      !names.includes("update_employee" as never) &&
+        !names.includes("send_email" as never),
+      "no send in propose schema",
     );
   });
 
@@ -281,7 +301,7 @@ const HOSTILE_CANDIDATE_NAME =
     });
   })();
 
-  console.log(`\nchat_prompt_injection: ${passed}/8 checks passed`);
+  console.log(`\nchat_prompt_injection: ${passed}/9 checks passed`);
 })().catch((e) => {
   console.error("FAIL:", e instanceof Error ? e.message : e);
   process.exit(1);

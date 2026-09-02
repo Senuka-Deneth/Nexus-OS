@@ -271,6 +271,7 @@ export async function POST(request: Request) {
             teamId,
             workspaceId,
             user: { id: user.id },
+            sessionId,
           },
         })) {
           full += delta;
