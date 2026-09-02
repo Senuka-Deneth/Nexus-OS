@@ -16,14 +16,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * People background job worker (Wave 1 D1).
+ * People background job worker (Wave 1 D1 + D3).
  *
- * Claims queued `background_jobs` rows and dispatches by `kind`. In D1, `people.match`
- * completes with a stub progress note — scoring is wired in D3.
+ * Claims queued `background_jobs` rows and dispatches by `kind`. For `people.match`,
+ * D3 runs deterministic D2 scoring in-process (`lib/people/match-worker.ts`) and writes
+ * scores onto `candidate_jobs`. n8n/cron should only POST this route — do not compute
+ * match scores in n8n.
  *
  * Scheduling (human): configure an n8n schedule or Vercel cron to POST this route with
  * `Authorization: Bearer <N8N_BOOTSTRAP_TOKEN>` (legacy `N8N_INGEST_TOKEN` accepted during
- * migration). Do not compute scores in n8n; Nexus owns business logic.
+ * migration).
  */
 export async function POST(request: Request) {
   const limited = rateLimit(request, "api:internal:people:jobs-run", 30, 60_000);

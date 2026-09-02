@@ -18,7 +18,7 @@ import {
   type ScoreResult,
 } from "@/lib/people/score";
 import { parseStoredWeights } from "@/lib/people/scoring-weights";
-import type { RemotePolicy, ScoringWeights } from "@/types";
+import type { RemotePolicy } from "@/types";
 
 export const MATCH_BATCH_SIZE = 100;
 

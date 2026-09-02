@@ -334,12 +334,16 @@ const scoringVersionSql = readFileSync(
     );
   });
 
-  const { handlePeopleMatch } = await import("@/lib/people/match-worker");
+  const { handlePeopleMatch, MATCH_BATCH_SIZE } = await import(
+    "@/lib/people/match-worker"
+  );
   const {
     enqueuePeopleMatchJob,
     dispatchBackgroundJob,
   } = await import("@/lib/people/background-jobs");
   const { writeSystemAuditEvent } = await import("@/lib/audit");
+
+  assert(MATCH_BATCH_SIZE === 100, "MATCH_BATCH_SIZE is 100");
 
   const tenantCtx = {
     supabase: makeServiceClient() as never,
@@ -389,8 +393,14 @@ const scoringVersionSql = readFileSync(
     assert(cj.ai_model === null, "ai_model cleared");
     assert(cj.ai_prompt_version === null, "ai_prompt_version cleared");
     const progress = tables.background_jobs[0].progress as Record<string, unknown>;
+    assert((cj.match_components as unknown[]).length === 6, "six components");
     assert(progress.processed === 1, "progress processed");
-    assert(progress.sufficient === 1, "progress sufficient");
+    assert(progress.scored === 1, "progress scored");
+    assert(progress.insufficient === 0, "progress insufficient");
+    assert(progress.skipped === 0, "progress skipped");
+    assert(progress.total === 1, "progress total");
+    assert(progress.scoring_version === SCORING_VERSION, "progress scoring_version");
+    assert(progress.scoring_weights_version === 1, "progress weights version");
   });
 
   await check("handlePeopleMatch writes insufficient with null score", async () => {
@@ -415,6 +425,9 @@ const scoringVersionSql = readFileSync(
     assert(cj.data_quality === "insufficient", "insufficient");
     assert(typeof cj.insufficient_reason === "string", "reason set");
     assert(cj.match_components === null, "no components");
+    assert(cj.scoring_version === SCORING_VERSION, "version still set");
+    const weightsUsed = cj.match_weights_used as { weights_version: number };
+    assert(weightsUsed.weights_version === 1, "weights envelope set");
   });
 
   await check("handlePeopleMatch rejects cross-tenant job_id", async () => {
@@ -446,13 +459,15 @@ const scoringVersionSql = readFileSync(
     assert(tables.audit_events.length === 1, "one audit row");
     const audit = tables.audit_events[0];
     assert(audit.actor_user_id === null, "null actor");
-    assert(audit.action === "match_scored", "action");
+    assert(audit.action === "match", "action");
     assert(audit.entity_id === JOB_ID, "entity job");
     const meta = audit.metadata as Record<string, unknown>;
     assert(meta.processed === 1, "processed count");
+    assert(meta.scored === 1, "scored count");
     assert(meta.scoring_version === SCORING_VERSION, "scoring_version in metadata");
-    assert(meta.weights_version === 1, "weights_version in metadata");
-    assert(!("email" in meta), "no PII in metadata");
+    assert(meta.scoring_weights_version === 1, "scoring_weights_version in metadata");
+    assert(!("email" in meta), "no email");
+    assert(!("full_name" in meta), "no full_name");
   });
 
   await check("writeSystemAuditEvent allows null actor", async () => {
@@ -462,7 +477,7 @@ const scoringVersionSql = readFileSync(
       { supabase: supabase as never, teamId: TEAM_ID, workspaceId: WORKSPACE_ID },
       {
         domain: "people",
-        action: "match_scored",
+        action: "match",
         entityType: "job",
         entityId: JOB_ID,
         metadata: { processed: 0 },
@@ -523,6 +538,116 @@ const scoringVersionSql = readFileSync(
     if (!result.ok) return;
     assert(result.data.job.id === "bg-queued", "same row");
     assert(tables.background_jobs.length === 1, "no duplicate");
+  });
+
+
+  await check("re-run overwrites previous score and weights_version", async () => {
+    resetTables();
+    seedJob({ scoring_weights_version: 2 });
+    seedCandidate();
+    seedCandidateJob({
+      match_score: 10,
+      scoring_version: "old",
+      match_weights_used: { weights: DEFAULT_SCORING_WEIGHTS, weights_version: 1 },
+      data_quality: "sufficient",
+    });
+    seedBackgroundJob();
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", "completed");
+    const cj = tables.candidate_jobs[0];
+    assert(cj.scoring_version === SCORING_VERSION, "new version");
+    const weightsUsed = cj.match_weights_used as { weights_version: number };
+    assert(weightsUsed.weights_version === 2, "weights_version overwritten");
+    assert(typeof cj.match_score === "number" && cj.match_score !== 10, "score overwritten");
+  });
+
+  await check("archived candidate skipped; stage unchanged", async () => {
+    resetTables();
+    seedJob();
+    seedCandidate({ archived_at: new Date().toISOString() });
+    seedCandidateJob({ stage: "shortlisted", match_score: null });
+    seedBackgroundJob();
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", "completed");
+    const cj = tables.candidate_jobs[0];
+    assert(cj.stage === "shortlisted", "stage unchanged");
+    assert(cj.match_score === null, "not scored");
+    const progress = tables.background_jobs[0].progress as Record<string, unknown>;
+    assert(progress.skipped === 1, "skipped archived");
+    assert(progress.scored === 0, "no scored");
+  });
+
+  await check("invalid stored weights fails invalid_weights", async () => {
+    resetTables();
+    seedJob({ scoring_weights: { technical_fit: 1 } });
+    seedCandidate();
+    seedCandidateJob({ match_score: null });
+    seedBackgroundJob();
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "failed", "failed");
+    assert(outcome.error === "invalid_weights", "invalid_weights");
+    assert(tables.candidate_jobs[0].match_score === null, "no write");
+  });
+
+  await check("empty candidate_jobs completes with processed 0", async () => {
+    resetTables();
+    seedJob();
+    seedBackgroundJob();
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", "completed");
+    const progress = tables.background_jobs[0].progress as Record<string, unknown>;
+    assert(progress.processed === 0, "processed 0");
+    assert(progress.total === 0, "total 0");
+    assert(progress.scored === 0, "scored 0");
+    assert(tables.audit_events.length === 1, "audit still written");
+  });
+
+  await check("batching uses MATCH_BATCH_SIZE and scores >100 rows", async () => {
+    resetTables();
+    seedJob();
+    const n = MATCH_BATCH_SIZE + 5;
+    for (let i = 0; i < n; i += 1) {
+      const cid = `cand-${String(i).padStart(4, "0")}`;
+      seedCandidate({
+        id: cid,
+        email: `c${i}@example.com`,
+        full_name: `Cand ${i}`,
+      });
+      seedCandidateJob({
+        id: `cj-${String(i).padStart(4, "0")}`,
+        candidate_id: cid,
+        match_score: null,
+        ai_explanation: null,
+        ai_model: null,
+        ai_prompt_version: null,
+      });
+    }
+    seedBackgroundJob();
+    const outcome = await handlePeopleMatch(
+      makeServiceClient() as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", `completed ${outcome.error ?? ""}`);
+    assert(tables.candidate_jobs.length === n, "all rows present");
+    assert(
+      tables.candidate_jobs.every((r) => typeof r.match_score === "number"),
+      "all scored",
+    );
+    const progress = tables.background_jobs[0].progress as Record<string, unknown>;
+    assert(progress.processed === n, "processed all");
+    assert(progress.total === n, "total all");
   });
 
   await check("dispatchBackgroundJob delegates to handlePeopleMatch", async () => {

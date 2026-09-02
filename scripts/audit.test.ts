@@ -225,16 +225,16 @@ const baseEvent = {
     { supabase: fakeClient as never, teamId: TEAM_ID, workspaceId: WORKSPACE_ID },
     {
       domain: "people",
-      action: "match_scored",
+      action: "match",
       entityType: "job",
       entityId: ENTITY_ID,
-      metadata: { processed: 2, scoring_version: "people.match.v1", weights_version: 1 },
+      metadata: { processed: 2, scoring_version: "people.match.v1", scoring_weights_version: 1 },
     },
   );
   assert(systemOk.ok === true, "system write ok");
   assert(inserted.length === 1, "one system row");
   assert(inserted[0].actor_user_id === null, "null actor for system write");
-  assert(inserted[0].action === "match_scored", "action");
+  assert(inserted[0].action === "match", "action");
   passed += 1;
   console.log("  ok  writeSystemAuditEvent allows null actor for service-role writes");
 

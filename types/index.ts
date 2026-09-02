@@ -317,6 +317,48 @@ export interface Candidate {
   updated_at: string;
 }
 
+
+export const CANDIDATE_JOB_STAGES = [
+  "new",
+  "shortlisted",
+  "contacted",
+  "decision",
+] as const;
+export type CandidateJobStage = (typeof CANDIDATE_JOB_STAGES)[number];
+
+export const CANDIDATE_JOB_DATA_QUALITIES = [
+  "pending",
+  "sufficient",
+  "insufficient",
+] as const;
+export type CandidateJobDataQuality = (typeof CANDIDATE_JOB_DATA_QUALITIES)[number];
+
+/** A row from `candidate_jobs` (application + scoring columns). */
+export interface CandidateJob {
+  id: string;
+  team_id: string;
+  workspace_id: string | null;
+  candidate_id: string;
+  job_id: string;
+  stage: CandidateJobStage;
+  match_score: number | null;
+  match_components: unknown | null;
+  match_weights_used: {
+    weights: ScoringWeights;
+    weights_version: number;
+  } | null;
+  scoring_version: string | null;
+  data_quality: CandidateJobDataQuality;
+  insufficient_reason: string | null;
+  ai_explanation: unknown | null;
+  ai_model: string | null;
+  ai_prompt_version: string | null;
+  manual_rank_override: number | null;
+  assigned_to: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

@@ -312,6 +312,36 @@ check("migration defines claim_background_jobs with skip locked and service_role
     assert(backgroundJobsTable[0].status === "failed", "row failed");
   });
 
+
+  await asyncCheck("requeues completed people.match with attempts reset", async () => {
+    resetJobs();
+    const first = await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
+    assert(first.ok, "first ok");
+    if (!first.ok) return;
+    backgroundJobsTable[0].status = "completed";
+    backgroundJobsTable[0].attempts = 4;
+    backgroundJobsTable[0].progress = { processed: 1 };
+    const second = await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
+    assert(second.ok, "second ok");
+    if (!second.ok) return;
+    assert(!second.data.created, "not created");
+    assert(second.data.job.id === first.data.job.id, "same id");
+    assert(second.data.job.status === "queued", "requeued");
+    assert(second.data.job.attempts === 0, "attempts 0");
+    assert(backgroundJobsTable.length === 1, "one row");
+  });
+
+  await asyncCheck("duplicate enqueue while queued returns existing", async () => {
+    resetJobs();
+    const first = await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
+    const second = await enqueuePeopleMatchJob(tenantCtx, JOB_ID);
+    assert(first.ok && second.ok, "both ok");
+    if (!first.ok || !second.ok) return;
+    assert(first.data.job.status === "queued", "queued");
+    assert(second.data.job.id === first.data.job.id, "same id");
+    assert(backgroundJobsTable.length === 1, "no duplicate");
+  });
+
   await asyncCheck("unknown kind fails job", async () => {
     resetJobs();
     backgroundJobsTable.push({
