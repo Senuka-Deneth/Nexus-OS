@@ -4,19 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+function isEmployeesPath(pathname: string): boolean {
+  if (pathname === "/people") return true;
+  if (!pathname.startsWith("/people/")) return false;
+  return (
+    !pathname.startsWith("/people/jobs") &&
+    !pathname.startsWith("/people/candidates")
+  );
+}
+
 const ITEMS = [
   {
     href: "/people",
     label: "Employees",
-    match: (pathname: string) =>
-      pathname === "/people" ||
-      (pathname.startsWith("/people/") && !pathname.startsWith("/people/jobs")),
+    match: isEmployeesPath,
   },
   {
     href: "/people/jobs",
     label: "Jobs",
     match: (pathname: string) =>
       pathname === "/people/jobs" || pathname.startsWith("/people/jobs/"),
+  },
+  {
+    href: "/people/candidates",
+    label: "Candidates",
+    match: (pathname: string) =>
+      pathname === "/people/candidates" ||
+      pathname.startsWith("/people/candidates/"),
   },
 ] as const;
 
