@@ -9,7 +9,8 @@ function isEmployeesPath(pathname: string): boolean {
   if (!pathname.startsWith("/people/")) return false;
   return (
     !pathname.startsWith("/people/jobs") &&
-    !pathname.startsWith("/people/candidates")
+    !pathname.startsWith("/people/candidates") &&
+    !pathname.startsWith("/people/email")
   );
 }
 
@@ -31,6 +32,12 @@ const ITEMS = [
     match: (pathname: string) =>
       pathname === "/people/candidates" ||
       pathname.startsWith("/people/candidates/"),
+  },
+  {
+    href: "/people/email",
+    label: "Email",
+    match: (pathname: string) =>
+      pathname === "/people/email" || pathname.startsWith("/people/email/"),
   },
 ] as const;
 

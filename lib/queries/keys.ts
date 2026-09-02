@@ -117,4 +117,7 @@ export const queryKeys = {
       offset,
       stage,
     ] as const,
+
+  peopleEmailDraft: (teamId: string | null, id: string) =>
+    [...queryKeys.root(teamId), "people-email-draft", id] as const,
 } as const;

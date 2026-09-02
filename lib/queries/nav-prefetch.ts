@@ -10,6 +10,7 @@ import {
   JOBS_PAGE_SIZE,
   jobsQuery,
   metricsQuery,
+  PEOPLE_EMAIL_PICKER_LIMIT,
   replyDraftsQuery,
   settingsQuery,
 } from "@/lib/queries/fetchers";
@@ -74,6 +75,41 @@ export function prefetchNavRoute(
     void queryClient.prefetchQuery({
       queryKey: queryKeys.conversations(teamId, 100),
       queryFn: () => conversationsQuery(100),
+      staleTime: STALE,
+    });
+    return;
+  }
+
+  if (href === "/people/email" || href.startsWith("/people/email")) {
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.employees(
+        teamId,
+        "",
+        "",
+        false,
+        PEOPLE_EMAIL_PICKER_LIMIT,
+        0,
+      ),
+      queryFn: () =>
+        employeesQuery({ limit: PEOPLE_EMAIL_PICKER_LIMIT, offset: 0 }),
+      staleTime: STALE,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.candidates(
+        teamId,
+        "",
+        "",
+        false,
+        PEOPLE_EMAIL_PICKER_LIMIT,
+        0,
+      ),
+      queryFn: () =>
+        candidatesQuery({ limit: PEOPLE_EMAIL_PICKER_LIMIT, offset: 0 }),
+      staleTime: STALE,
+    });
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.settings(teamId),
+      queryFn: settingsQuery,
       staleTime: STALE,
     });
     return;

@@ -16,6 +16,10 @@ import type {
   CandidateJobStage,
   CandidateJobStageCounts,
   JobCandidateListItem,
+  PeopleEmailPurpose,
+  PeopleEmailRecipientType,
+  PeopleEmailTone,
+  PeopleMessageDraft,
   TeamAssignee,
   Metrics,
   MetricsTimeseries,
@@ -855,4 +859,77 @@ export async function importCandidateCsv(
   if (!res.ok) throw new Error(errFrom(res, json));
   if (json.ok !== true) throw new Error(json.error ?? "CSV import failed");
   return json;
+}
+
+export const PEOPLE_EMAIL_PICKER_LIMIT = 100;
+
+export type PeopleEmailGenerateBody = {
+  recipient_type: PeopleEmailRecipientType;
+  recipient_id: string;
+  purpose: PeopleEmailPurpose;
+  tone: PeopleEmailTone;
+  situation: string;
+  facts?: string[];
+  related_date?: string | null;
+};
+
+export type PeopleEmailLetterBody = {
+  subject?: string;
+  body?: string;
+};
+
+export async function generatePeopleEmailDraft(
+  body: PeopleEmailGenerateBody,
+): Promise<PeopleMessageDraft> {
+  const res = await authenticatedFetch("/api/people/email/drafts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await readJson<{ data?: PeopleMessageDraft; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid email draft response");
+  }
+  return json.data;
+}
+
+export async function updatePeopleEmailDraft(
+  id: string,
+  body: PeopleEmailLetterBody,
+): Promise<PeopleMessageDraft> {
+  const res = await authenticatedFetch(
+    `/api/people/email/drafts/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: PeopleMessageDraft; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid email draft response");
+  }
+  return json.data;
+}
+
+export async function sendPeopleEmailDraft(
+  id: string,
+  body: PeopleEmailLetterBody = {},
+): Promise<PeopleMessageDraft> {
+  const res = await authenticatedFetch(
+    `/api/people/email/drafts/${encodeURIComponent(id)}/send`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJson<{ data?: PeopleMessageDraft; error?: string }>(res);
+  if (!res.ok) throw new Error(errFrom(res, json));
+  if (!json.data || typeof json.data !== "object") {
+    throw new Error("Invalid email send response");
+  }
+  return json.data;
 }

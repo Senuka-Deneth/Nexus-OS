@@ -156,6 +156,20 @@ export function CandidateDetail({ candidateId }: { candidateId: string }) {
           Edit identity and provenance. Archive hides the candidate from the
           default list without deleting them. This does not rank or send email.
         </p>
+        {candidate.email ? (
+          <div className="mt-4">
+            <Link
+              href={`/people/email?type=candidate&id=${encodeURIComponent(candidate.id)}`}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 py-2.5 text-sm font-medium text-atmospheric-grey transition-colors duration-interaction hover:bg-surface-elevated"
+            >
+              Compose email
+            </Link>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted">
+            Add an email address to compose a letter from People.
+          </p>
+        )}
       </header>
 
       {archived ? (

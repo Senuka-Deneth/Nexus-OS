@@ -79,11 +79,11 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`
   Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/CandidateStagePill.tsx`, `components/people/pipeline-labels.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`
 
-- [ ] **F1** Generic email draft service (never sends). Depends: none.  
-  Done:
+- [x] **F1** Generic email draft service (never sends). Depends: none. — 2026-09-02 — `lib/ai/draft-email.ts`, `lib/ai/email-draft.ts`, `ai_prompts/email_draft_prompt.txt`, `scripts/ai_email_draft.test.ts`
+  Done: 2026-09-02 — `lib/ai/draft-email.ts`, `lib/ai/email-draft.ts`, `ai_prompts/email_draft_prompt.txt`, `lib/ai/provider.ts`, `scripts/ai_email_draft.test.ts`, `scripts/ai_provider.test.ts`
 
-- [ ] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2.  
-  Done:
+- [x] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2. — 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `app/people/email/page.tsx`, `scripts/people_email_api.test.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `lib/people/email-transport.ts`, `app/api/people/email/drafts/route.ts`, `app/api/people/email/drafts/[id]/route.ts`, `app/api/people/email/drafts/[id]/send/route.ts`, `app/people/email/page.tsx`, `components/people/PeopleEmailComposer.tsx`, `scripts/people_email_schema.test.ts`, `scripts/people_email_api.test.ts`
 
 - [ ] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2.  
   Done:
@@ -109,7 +109,7 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---

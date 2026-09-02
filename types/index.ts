@@ -430,6 +430,68 @@ export type JobCandidateListItem = {
   candidate: JobCandidateCandidateSummary;
 };
 
+export const PEOPLE_EMAIL_RECIPIENT_TYPES = ["employee", "candidate"] as const;
+export type PeopleEmailRecipientType =
+  (typeof PEOPLE_EMAIL_RECIPIENT_TYPES)[number];
+
+export const PEOPLE_EMAIL_TONES = [
+  "professional",
+  "warm",
+  "concise",
+  "formal",
+] as const;
+export type PeopleEmailTone = (typeof PEOPLE_EMAIL_TONES)[number];
+
+export const PEOPLE_EMAIL_PURPOSES = [
+  "follow_up",
+  "scheduling",
+  "outreach",
+  "interview_invite",
+  "operational_update",
+  "other",
+] as const;
+export type PeopleEmailPurpose = (typeof PEOPLE_EMAIL_PURPOSES)[number];
+
+export const PEOPLE_MESSAGE_DRAFT_STATUSES = [
+  "draft",
+  "sent",
+  "discarded",
+] as const;
+export type PeopleMessageDraftStatus =
+  (typeof PEOPLE_MESSAGE_DRAFT_STATUSES)[number];
+
+export const PEOPLE_EMAIL_TRANSPORTS = ["gmail", "smtp", "sandbox"] as const;
+export type PeopleEmailTransport = (typeof PEOPLE_EMAIL_TRANSPORTS)[number];
+
+/** A row from `people_message_drafts` (People composer; send is explicit). */
+export interface PeopleMessageDraft {
+  id: string;
+  team_id: string;
+  workspace_id: string | null;
+  recipient_type: PeopleEmailRecipientType;
+  employee_id: string | null;
+  candidate_id: string | null;
+  recipient_name: string | null;
+  recipient_email: string;
+  purpose: PeopleEmailPurpose | null;
+  tone: PeopleEmailTone | null;
+  situation: string | null;
+  facts: string[];
+  related_date: string | null;
+  subject: string;
+  body: string;
+  status: PeopleMessageDraftStatus;
+  sent_at: string | null;
+  provider_message_id: string | null;
+  transport: PeopleEmailTransport | null;
+  ai_model: string | null;
+  ai_prompt_version: string | null;
+  ai_metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** A row from `workflow_logs` (n8n observability, restored by migration 20260713160000). */
 export interface WorkflowLogRow {
   id: string;

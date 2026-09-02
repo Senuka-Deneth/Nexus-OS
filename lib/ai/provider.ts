@@ -21,6 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const AI_MODELS = {
   CLASSIFY: process.env.OPENAI_MODEL_CLASSIFY?.trim() || "gpt-4o-mini",
   DRAFT: process.env.OPENAI_MODEL_DRAFT?.trim() || "gpt-4o",
+  EMAIL_DRAFT: process.env.OPENAI_MODEL_EMAIL_DRAFT?.trim() || "gpt-4o",
   REPORT: process.env.OPENAI_MODEL_REPORT?.trim() || "gpt-4o-mini",
   PEOPLE_EXPLAIN: process.env.OPENAI_MODEL_PEOPLE_EXPLAIN?.trim() || "gpt-4o-mini",
   CHAT: process.env.OPENAI_MODEL?.trim() || "gpt-4o",
@@ -32,6 +33,7 @@ export const AI_MODELS = {
 export type AiOperation =
   | "classify"
   | "draft"
+  | "email_draft"
   | "report_summary"
   | "people_explain"
   | "chat"
