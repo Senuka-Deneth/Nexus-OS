@@ -7,10 +7,13 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Plus,
   Search,
+  Upload,
   UserRound,
 } from "lucide-react";
+import { EmployeeCsvImport } from "@/components/people/EmployeeCsvImport";
 import { EmployeeStatusPill } from "@/components/people/EmployeeStatusPill";
 import { EMPLOYMENT_STATUS_LABELS } from "@/components/people/status-labels";
 import { useTenantScope } from "@/components/tenant/TenantScope";
@@ -21,6 +24,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import {
   EMPLOYEES_PAGE_SIZE,
   employeesQuery,
+  exportEmployeesCsv,
 } from "@/lib/queries/fetchers";
 import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
@@ -52,6 +56,9 @@ export function EmployeesList() {
   const [statusFilter, setStatusFilter] = useState<EmploymentStatus | "">("");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -100,6 +107,18 @@ export function EmployeesList() {
     setStatusFilter(next);
   }
 
+  async function onExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportEmployeesCsv();
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (tenant.loading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-muted">
@@ -136,16 +155,36 @@ export function EmployeesList() {
       <header className="flex flex-col gap-4 hairline-b pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="nexus-meta text-nexus-approval">People</p>
-          <h1 className="mt-3 nexus-app-title text-atmospheric-grey">Employees</h1>
+          <h1 className="mt-3 nexus-app-title text-balance text-atmospheric-grey">Employees</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Company roster for this workspace. Workspace invites stay under Team.
           </p>
         </div>
-        <Button onClick={() => router.push("/people/new")}>
-          <Plus className="h-4 w-4" aria-hidden />
-          Add employee
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" aria-hidden />
+            Import CSV
+          </Button>
+          <Button variant="secondary" onClick={() => void onExport()} disabled={exporting}>
+            {exporting ? (
+              <Spinner className="h-4 w-4" label="Exporting" />
+            ) : (
+              <Download className="h-4 w-4" aria-hidden />
+            )}
+            Export CSV
+          </Button>
+          <Button onClick={() => router.push("/people/new")}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Add employee
+          </Button>
+        </div>
       </header>
+
+      {exportError ? (
+        <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">
+          Could not export employees: {exportError}
+        </p>
+      ) : null}
 
       {errorMsg && rows.length > 0 ? (
         <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">
@@ -182,7 +221,8 @@ export function EmployeesList() {
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="-mx-1 overflow-x-auto px-1">
+        <div className="flex w-max gap-2 md:w-full md:flex-wrap">
         <FilterChip active={statusFilter === ""} onClick={() => setStatus("")}>
           All
         </FilterChip>
@@ -195,6 +235,7 @@ export function EmployeesList() {
             {EMPLOYMENT_STATUS_LABELS[value]}
           </FilterChip>
         ))}
+        </div>
       </div>
 
       {queriesEnabled && isPending && rows.length === 0 ? (
@@ -215,7 +256,11 @@ export function EmployeesList() {
             icon={<UserRound />}
           />
           {!filtersActive ? (
-            <div className="flex justify-center">
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="secondary" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4" aria-hidden />
+                Import CSV
+              </Button>
               <Button onClick={() => router.push("/people/new")}>
                 <Plus className="h-4 w-4" aria-hidden />
                 Add employee
@@ -225,7 +270,38 @@ export function EmployeesList() {
         </div>
       ) : (
         <div className="app-glass-card overflow-hidden rounded-xl">
-          <div className="overflow-x-auto">
+          <ul className="divide-y divide-border/60 md:hidden">
+            {rows.map((row) => (
+              <li key={row.id}>
+                <Link
+                  href={`/people/${row.id}`}
+                  className={cn(
+                    "flex min-h-11 flex-col gap-2 px-4 py-3.5",
+                    row.archived_at && "opacity-70",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 truncate font-medium text-atmospheric-grey">
+                      {row.full_name}
+                      {row.archived_at ? (
+                        <span className="ml-2 text-xs font-normal text-muted">
+                          Archived
+                        </span>
+                      ) : null}
+                    </p>
+                    <EmployeeStatusPill status={row.employment_status} />
+                  </div>
+                  <p className="text-sm text-muted">
+                    {row.role_title ?? "No role"} · {row.email ?? "No email"}
+                  </p>
+                  <p className="text-xs tabular-nums text-muted">
+                    Started {formatIsoDate(row.started_on)}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead>
                 <tr className="text-muted">
@@ -273,7 +349,7 @@ export function EmployeesList() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between gap-3 hairline-t px-4 py-3 text-xs text-muted">
+          <div className="flex flex-col gap-3 hairline-t px-4 py-3 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
             <span>
               {count === 0
                 ? "No results"
@@ -284,7 +360,7 @@ export function EmployeesList() {
                 type="button"
                 onClick={() => setOffset((value) => Math.max(0, value - EMPLOYEES_PAGE_SIZE))}
                 disabled={!hasPrev}
-                className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface-muted px-2.5 py-1 font-medium text-atmospheric-grey transition hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface-muted px-2.5 py-1 font-medium text-atmospheric-grey transition hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
                 Prev
@@ -293,7 +369,7 @@ export function EmployeesList() {
                 type="button"
                 onClick={() => setOffset((value) => value + EMPLOYEES_PAGE_SIZE)}
                 disabled={!hasNext}
-                className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface-muted px-2.5 py-1 font-medium text-atmospheric-grey transition hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-lg border border-border-strong bg-surface-muted px-2.5 py-1 font-medium text-atmospheric-grey transition hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
                 <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -302,6 +378,8 @@ export function EmployeesList() {
           </div>
         </div>
       )}
+
+      <EmployeeCsvImport open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }

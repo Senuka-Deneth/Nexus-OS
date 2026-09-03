@@ -117,4 +117,20 @@ Postgres reserved word; local SQL quotes `"current_role"`. Re-applied successful
 | `20260901130000_people_schema.sql` | `20260901072620` / `people_schema` |
 
 Verified: `employees`, `jobs`, `candidates`, `candidate_jobs` exist; RLS enabled; 4 policies
-each (select/insert/update/delete).
+each (select/insert/update/delete) at apply time. **L1** later dropped the DELETE
+policies and revoked TRUNCATE/DELETE grants from `authenticated` (see §8).
+
+## 8. L1 — People hardening grants (2026-09-03)
+
+Applied to hosted `xuvodbcdmfhlbldbvwvt` via **Supabase MCP** `apply_migration`.
+
+| Local file | Remote `schema_migrations` |
+|---|---|
+| `20260903120000_people_hardening_grants.sql` | `20260903051451` / `people_hardening_grants` |
+
+Verified 2026-09-03: `authenticated` has SELECT/INSERT/UPDATE only on
+`employees`, `jobs`, `candidates`, `candidate_jobs`, `people_message_drafts`,
+`background_jobs`, `chat_proposed_actions`; `audit_events` is SELECT+INSERT.
+No DELETE policies on those People tables. `anon` has no table grants.
+`service_role` retains full grants (including TRUNCATE). Archive-only in app
+code; do not rewrite `20260901130000_people_schema.sql`.

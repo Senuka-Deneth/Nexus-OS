@@ -21,7 +21,7 @@ These override habit. If a request conflicts, STOP and ask.
 
 1. **Pipelines are functions, not agent loops.** Fetch, noise-filter, classify, draft, score, CSV parse, and send are deterministic steps or single LLM calls. Do not wrap them in tool routers. **Chat is the only conversational agent** and stays read-only unless a named plan partition explicitly adds confirmation-gated tools. Domain agents, if added later, are thin facades over services — never a mega-agent with every Nexus tool.
 
-2. **One vector store, in Supabase.** `pgvector` in existing Postgres. One `embeddings` table tagged by `kind` (`business_doc` | `conversation` | `summary`). Do not embed a kind until a feature reads it. No Pinecone/Weaviate/etc.
+2. **One vector store, in Supabase.** `pgvector` in existing Postgres. One `embeddings` table tagged by `kind` (`business_doc` | `conversation` | `summary` | `people_summary`). Do not embed a kind until a feature reads it. No Pinecone/Weaviate/etc.
 
 3. **All outbound is approval-gated by policy.** Replies and posts go through the existing approval layer (`lib/approval-policy.ts`, `/approval`, `reply_drafts`). People email is **generate draft → persist → explicit send**. Never send or publish from a classifier, scorer, drafter, or Chat. The LLM must never decide whether an action is allowed.
 

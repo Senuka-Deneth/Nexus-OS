@@ -11,6 +11,12 @@ export type AuditTenantContext = {
   user: { id: string };
 };
 
+export type SystemAuditContext = {
+  supabase: SupabaseClient;
+  teamId: string;
+  workspaceId: string | null;
+};
+
 export type AuditEventInput = {
   domain: string;
   action: string;
@@ -67,6 +73,52 @@ export async function writeAuditEvent(
     team_id: teamId,
     workspace_id: workspaceId,
     actor_user_id: actorUserId,
+    domain,
+    action,
+    entity_type: entityType,
+    entity_id: boundId(event.entityId),
+    prev_state: event.prevState ?? null,
+    next_state: event.nextState ?? null,
+    metadata: boundMetadata(event.metadata),
+  };
+
+  try {
+    const { error } = await ctx.supabase.from("audit_events").insert(row);
+    if (error) {
+      return { ok: false, error: error.message || "Failed to write audit event" };
+    }
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to write audit event";
+    return { ok: false, error: message };
+  }
+}
+
+/**
+ * Persist one audit row with a null actor (service-role system writes).
+ * Tenant comes from server context only — never from a request body.
+ */
+export async function writeSystemAuditEvent(
+  ctx: SystemAuditContext,
+  event: AuditEventInput,
+): Promise<AuditWriteResult> {
+  const teamId = boundId(ctx.teamId);
+  if (!teamId) {
+    return { ok: false, error: "Missing tenant context" };
+  }
+
+  const domain = boundLabel(event.domain);
+  const action = boundLabel(event.action);
+  const entityType = boundLabel(event.entityType);
+  if (!domain || !action || !entityType) {
+    return { ok: false, error: "domain, action, and entityType are required" };
+  }
+
+  const workspaceId = boundId(ctx.workspaceId);
+  const row = {
+    team_id: teamId,
+    workspace_id: workspaceId,
+    actor_user_id: null,
     domain,
     action,
     entity_type: entityType,

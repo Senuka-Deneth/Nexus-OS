@@ -50,7 +50,7 @@ export function EmployeeCreate() {
           Back to employees
         </Link>
         <p className="mt-4 nexus-meta text-nexus-approval">People</p>
-        <h1 className="mt-3 nexus-app-title text-atmospheric-grey">Add employee</h1>
+        <h1 className="mt-3 nexus-app-title text-balance text-atmospheric-grey">Add employee</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
           Add someone to the company roster. This is not a workspace invite — use
           Team for that.

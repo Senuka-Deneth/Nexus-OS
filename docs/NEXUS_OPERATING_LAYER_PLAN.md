@@ -46,71 +46,80 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
 - [x] **B2** Employee UI + one `/people` nav item (do not change `/team`). Depends: B1. — 2026-09-01 — `app/people/page.tsx`, `components/people/*`, `lib/queries/fetchers.ts`, `components/layout/AppSidebar.tsx`
   Done: 2026-09-01 — `app/people/page.tsx`, `app/people/new/page.tsx`, `app/people/[id]/page.tsx`, `components/people/*`, `lib/queries/keys.ts`, `lib/queries/fetchers.ts`, `lib/queries/nav-prefetch.ts`, `components/layout/AppSidebar.tsx`, `middleware.ts`
 
-- [ ] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none.  
-  Done:
+- [x] **B3** Shared CSV parser (pure functions, employee + candidate field dictionaries). Depends: none. — 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `scripts/csv_engine.test.ts`
+  Done: 2026-09-02 — `lib/csv/parse.ts`, `lib/csv/profiles.ts`, `lib/csv/plan.ts`, `lib/csv/index.ts`, `scripts/csv_engine.test.ts`
 
-- [ ] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3.  
-  Done:
+- [x] **B4** Employee CSV import/export (row-level errors, cap 500, no AI). Depends: B2, B3. — 2026-09-02 — `lib/people/employee-csv.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`
+  Done: 2026-09-02 — `lib/csv/serialize.ts`, `lib/csv/plan.ts`, `lib/people/employee-csv.ts`, `lib/people/employees.ts`, `app/api/people/employees/import/route.ts`, `app/api/people/employees/import/preview/route.ts`, `app/api/people/employees/export/route.ts`, `components/people/EmployeeCsvImport.tsx`, `components/people/EmployeesList.tsx`, `lib/queries/fetchers.ts`, `scripts/people_employees_csv.test.ts`
 
-- [ ] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2.  
-  Done:
+- [x] **C1** Jobs API + create/edit UI (versioned scoring weights). Depends: A2. — 2026-09-02 — `lib/people/jobs.ts`, `lib/people/scoring-weights.ts`, `app/api/people/jobs/route.ts`, `app/api/people/jobs/[id]/route.ts`, `components/people/JobForm.tsx`
+  Done: 2026-09-02 — `types/index.ts`, `lib/people/scoring-weights.ts`, `lib/people/jobs.ts`, `app/api/people/jobs/route.ts`, `app/api/people/jobs/[id]/route.ts`, `app/people/layout.tsx`, `app/people/jobs/page.tsx`, `app/people/jobs/new/page.tsx`, `app/people/jobs/[id]/page.tsx`, `components/people/PeopleSubnav.tsx`, `components/people/JobForm.tsx`, `components/people/JobsList.tsx`, `lib/queries/fetchers.ts`, `scripts/people_jobs_api.test.ts`
 
-- [ ] **C2** Candidate CRUD API + UI (no scores). Depends: A2.  
-  Done:
+- [x] **C2** Candidate CRUD API + UI (no scores). Depends: A2. — 2026-09-02 — `lib/people/candidates.ts`, `app/api/people/candidates/route.ts`, `app/people/candidates/page.tsx`, `components/people/CandidateForm.tsx`
+  Done: 2026-09-02 — `types/index.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/route.ts`, `app/api/people/candidates/[id]/route.ts`, `app/people/candidates/page.tsx`, `app/people/candidates/new/page.tsx`, `app/people/candidates/[id]/page.tsx`, `components/people/CandidatesList.tsx`, `components/people/CandidateForm.tsx`, `components/people/CandidateCreate.tsx`, `components/people/CandidateDetail.tsx`, `components/people/PeopleSubnav.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_api.test.ts`
 
-- [ ] **C3** Candidate CSV import onto a selected job (stage `new`, no scores). Depends: B3, B4, C1, C2.  
-  Done:
+- [x] **C3** Candidate CSV import onto a selected job (stage `new`, no scores). Depends: B3, B4, C1, C2. — 2026-09-02 — `lib/people/candidate-csv.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/import/route.ts`, `app/api/people/candidates/import/preview/route.ts`, `components/people/CandidateCsvImport.tsx`, `components/people/CandidatesList.tsx`, `components/people/JobDetail.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_csv.test.ts`
+  Done: 2026-09-02 — `lib/people/candidate-csv.ts`, `lib/people/candidates.ts`, `app/api/people/candidates/import/route.ts`, `app/api/people/candidates/import/preview/route.ts`, `components/people/CandidateCsvImport.tsx`, `components/people/CandidatesList.tsx`, `components/people/JobDetail.tsx`, `lib/queries/fetchers.ts`, `scripts/people_candidates_csv.test.ts`
 
-- [ ] **D2** Deterministic scoring engine (pure, no LLM, no DB). Depends: none. May run in parallel with D1.  
-  Done:
+- [x] **D2** Deterministic scoring engine (pure, no LLM, no DB). Depends: none. May run in parallel with D1. — 2026-09-02 — `lib/people/score.ts`, `scripts/people_score.test.ts`
+  Done: 2026-09-02 — `lib/people/score.ts`, `scripts/people_score.test.ts`, `package.json`
 
-- [ ] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3.  
-  Done:
+- [x] **D1** `background_jobs` table + match worker skeleton (no scoring yet). Depends: C3. — 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902140000_background_jobs.sql`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `lib/people/candidate-csv.ts`, `scripts/people_background_jobs.test.ts`, `scripts/people_candidates_csv.test.ts`, `package.json`
 
-- [ ] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2.  
-  Done:
+- [x] **D3** Wire D2 scoring into D1 worker. Depends: D1, D2. — 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/people/jobs.ts`, `lib/audit.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`
+  Done: 2026-09-02 — `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `lib/people/jobs.ts`, `lib/audit.ts`, `app/api/internal/people/jobs/run/route.ts`, `supabase/migrations/20260902150000_candidate_jobs_scoring_version_text.sql`, `scripts/people_match_worker.test.ts`, `scripts/people_background_jobs.test.ts`, `scripts/audit.test.ts`, `types/index.ts`, `package.json`
 
-- [ ] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3.  
-  Done:
+- [x] **D4** AI explanation of already-computed scores (`lib/ai/*`, no score rewrite). Depends: D3. — 2026-09-02 — `lib/ai/people-explain.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `scripts/people_match_explain.test.ts`
+  Done: 2026-09-02 — `lib/ai/people-explain.ts`, `lib/ai/provider.ts`, `ai_prompts/people_match_explanation_prompt.txt`, `lib/people/match-explanation.ts`, `lib/people/match-worker.ts`, `lib/people/background-jobs.ts`, `app/api/internal/people/jobs/run/route.ts`, `types/index.ts`, `scripts/people_match_explain.test.ts`, `scripts/people_match_worker.test.ts`, `scripts/ai_provider.test.ts`, `package.json`
 
-- [ ] **D5** Candidate ranking UI (advisory; manual override). Depends: D4.  
-  Done:
+- [x] **D5** Candidate ranking UI (advisory; manual override). Depends: D4. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/JobDetail.tsx`, `scripts/people_candidate_jobs_api.test.ts`
+  Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/ranking-labels.ts`, `components/people/JobDetail.tsx`, `components/people/JobsList.tsx`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`, `package.json`
 
-- [ ] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5.  
-  Done:
+- [x] **D6** Four-stage pipeline: New → Shortlisted → Contacted → Decision. Depends: D5. — 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`
+  Done: 2026-09-02 — `lib/people/candidate-jobs.ts`, `app/api/people/candidate-jobs/[id]/route.ts`, `app/api/people/jobs/[id]/candidates/route.ts`, `app/api/people/jobs/[id]/candidates/stage/route.ts`, `components/people/JobCandidatesRank.tsx`, `components/people/CandidateStagePill.tsx`, `components/people/pipeline-labels.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_candidate_jobs_api.test.ts`
 
-- [ ] **F1** Generic email draft service (never sends). Depends: none.  
-  Done:
+- [x] **F1** Generic email draft service (never sends). Depends: none. — 2026-09-02 — `lib/ai/draft-email.ts`, `lib/ai/email-draft.ts`, `ai_prompts/email_draft_prompt.txt`, `scripts/ai_email_draft.test.ts`
+  Done: 2026-09-02 — `lib/ai/draft-email.ts`, `lib/ai/email-draft.ts`, `ai_prompts/email_draft_prompt.txt`, `lib/ai/provider.ts`, `scripts/ai_email_draft.test.ts`, `scripts/ai_provider.test.ts`
 
-- [ ] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2.  
-  Done:
+- [x] **F2** Composer + explicit send (real UI pickers; Gmail if connected, else SMTP mailbox). Depends: F1, A1, and B1 or C2. — 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `app/people/email/page.tsx`, `scripts/people_email_api.test.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902160000_people_message_drafts.sql`, `lib/people/email-drafts.ts`, `lib/people/email-transport.ts`, `app/api/people/email/drafts/route.ts`, `app/api/people/email/drafts/[id]/route.ts`, `app/api/people/email/drafts/[id]/send/route.ts`, `app/people/email/page.tsx`, `components/people/PeopleEmailComposer.tsx`, `scripts/people_email_schema.test.ts`, `scripts/people_email_api.test.ts`
 
-- [ ] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2.  
-  Done:
+- [x] **F3** Post-send follow-up confirmation (separate from send; no auto status change). Depends: F2. — 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `scripts/people_email_api.test.ts`
+  Done: 2026-09-02 — `lib/people/email-follow-up.ts`, `app/api/people/email/drafts/[id]/follow-up/route.ts`, `components/people/PeopleEmailFollowUp.tsx`, `components/people/PeopleEmailComposer.tsx`, `lib/people/email-drafts.ts`, `lib/queries/fetchers.ts`, `lib/queries/keys.ts`, `types/index.ts`, `scripts/people_email_api.test.ts`
 
-- [ ] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2.  
-  Done:
+- [x] **G1** Read-only People snapshot in existing Chat. Depends: B1, C1, C2. — 2026-09-02 — `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `scripts/chat_analyst.test.ts`
+  Done: 2026-09-02 — `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `lib/chat/persona.ts`, `scripts/chat_analyst.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 
 ### Wave 1 complete
 
-- [ ] **W1** All Wave 1 boxes above are `[x]`. Founder can: roster + CSV, job + ranked candidates, four stages, explicit email send, Chat answers from People snapshot without mutating. Run `npm run test:gate`.  
-  Done:
+- [x] **W1** All Wave 1 boxes above are `[x]`. Founder can: roster + CSV, job + ranked candidates, four stages, explicit email send, Chat answers from People snapshot without mutating. Run `npm run test:gate`. — 2026-09-02
+  Done: 2026-09-02 — `npm run test:gate` pass (lint, People tests, `test:chat-analyst`, `test:prompt-injection`, n8n export, build)
 
 ### Wave 2 — do not start until W1 is ticked
 
-- [ ] **G2** People read tools in Chat (only if G1 Q&A is insufficient)
-- [ ] **G3** Confirmation-gated People tools
-- [ ] **H1** CandidateSource adapter (interface only)
-- [ ] **H2** One consented external source (human-picked; not GitHub scrape-by-default)
-- [ ] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools)
-- [ ] **J1** Embed People summaries only when a feature reads that `kind`
-- [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)
-- [ ] **L1** Production hardening audit
+- [x] **G2** People read tools in Chat (only if G1 Q&A is insufficient). Depends: G1. — 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `app/api/chat/route.ts`
+  Done: 2026-09-02 — `lib/chat/people-tools.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_people_tools.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
+- [x] **G3** Confirmation-gated People tools — 2026-09-02 — `lib/chat/people-propose.ts`, `app/api/chat/actions/route.ts`, `components/chat/ProposedActionCard.tsx`
+  Done: 2026-09-02 — `supabase/migrations/20260902170000_chat_proposed_actions.sql`, `lib/chat/people-propose.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/api/chat/actions/route.ts`, `app/api/chat/actions/[id]/route.ts`, `app/chat/page.tsx`, `components/chat/ProposedActionCard.tsx`, `types/index.ts`, `scripts/chat_proposed_actions.test.ts`, `scripts/chat_proposed_actions_schema.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
+- [x] **H1** CandidateSource adapter (interface only). Depends: C2. — 2026-09-02 — `lib/people/sources/*`, `lib/people/candidates.ts`, `scripts/people_candidate_source.test.ts`
+  Done: 2026-09-02 — `lib/people/sources/`, `lib/people/candidates.ts`, `types/index.ts`, `scripts/people_candidate_source.test.ts`, `scripts/people_candidates_api.test.ts`, `package.json`
+- [x] **H2** One consented external source (human-picked; not GitHub scrape-by-default). Depends: H1. — 2026-09-02 — `lib/people/from-source.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`
+  Done: 2026-09-02 — `lib/people/sources/github.ts`, `lib/people/from-source.ts`, `lib/people/candidate-jobs.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/from-source/route.ts`, `components/people/CandidateGithubImport.tsx`, `scripts/people_from_source.test.ts`, `package.json`
+- [x] **I1** Mini-router (people vs revenue vs small-talk; no mega-tools). Depends: G2, G3. — 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`
+  Done: 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_router.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
+- [x] **J1** Embed People summaries only when a feature reads that `kind` — 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/embeddings/store.ts`
+  Done: 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/embeddings/store.ts`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/people/employees.ts`, `lib/people/jobs.ts`, `lib/people/candidates.ts`, `lib/people/match-worker.ts`, `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/chat/page.tsx`, `app/api/internal/n8n/match-embeddings/route.ts`, `scripts/people_summaries.test.ts`
+- [x] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus) — 2026-09-03 — `n8n_logic/exports/wf9_people_match_drain.json`, `scripts/people_n8n_drain.test.ts`
+  Done: 2026-09-03 — `n8n_logic/exports/wf9_people_match_drain.json`, `scripts/people_n8n_drain.test.ts`, `scripts/prepare_n8n_deploy_payload.mjs`, live n8n `d1CkkuSDwsZKVhQq` (published)
+- [x] **L1** Production hardening audit — 2026-09-03 — `supabase/migrations/20260903120000_people_hardening_grants.sql`, `lib/ai/budget.ts`, `app/api/people/candidates/export/route.ts`
+  Done: 2026-09-03 — `supabase/migrations/20260903120000_people_hardening_grants.sql`, `lib/ai/budget.ts`, `lib/ai/people-explain.ts`, `lib/ai/draft-email.ts`, `lib/embeddings/store.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/export/route.ts`, `components/people/CandidatesList.tsx`, `scripts/people_hardening.test.ts`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); B1+ pending
-- [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory)
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); **J1 `embeddings_people_summary_kind` applied 2026-09-02** (MCP `apply_migration`); **L1 `people_hardening_grants` applied 2026-09-03** (MCP `apply_migration`); B1+ pending
+- [x] After D1: cron that POSTs the People job-run endpoint — **K1 WF9 `d1CkkuSDwsZKVhQq` published 2026-09-03** (every 15 min → `POST /api/internal/people/jobs/run`)
+- [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---
 
@@ -222,7 +231,7 @@ Do not spend a conversation re-deriving this. Re-inspect files you will *edit*; 
 | AI | OpenAI via `lib/ai/provider.ts` (gpt-4o / gpt-4o-mini / embeddings). n8n calls `/api/internal/n8n/ai/*` — it does not hold `OPENAI_API_KEY` |
 | Orchestration | n8n Cloud + `n8n_logic/`. Business rules stay in Next.js/`lib/` |
 | Chat | Read-only Revenue Analyst at `/chat` (`app/api/chat/route.ts`, `lib/chat/*`) |
-| Knowledge | One `embeddings` table, `kind` in (`business_doc`, `conversation`, `summary`) |
+| Knowledge | One `embeddings` table, `kind` in (`business_doc`, `conversation`, `summary`, `people_summary`) |
 | Approval | `lib/approval-policy.ts` + `/approval` + `reply_drafts` |
 | Tenancy | Pipeline: `teams` → `workspaces` → `team_id` / `workspace_id`. Social: `organizations`. Bridge: `teams.organization_id` (`20260717120000_teams_organization_id_bridge.sql`) |
 | API auth | `requireApiTenantContext()` in `lib/api-security.ts` (user + `profiles.team_id` + first workspace). Rate limits on routes |
@@ -898,6 +907,213 @@ If People tables are empty, say so. Do not fabricate employees.
 
 ---
 
+### G2 — People read tools in Chat
+
+**Goal:** When the G1 snapshot cannot answer a named roster or pipeline question, Chat may call three **read-only** People tools. Still no mutations, no router, no send.
+
+**Prompt:**
+
+```text
+Implement partition G2 only.
+
+Add a closed allowlist of read-only People tools to the existing Revenue Analyst chat: search_employees, search_candidates, list_job_pipeline. Wrap lib/people list helpers. Project names/roles/stages/scores only — never email, phone, notes, or URLs. Cap queries at 80 characters and results at 8 rows. At most two tool rounds, then stream the final answer. Mock mode skips the loop.
+
+User/knowledge text cannot add tools. Unknown names return an error JSON. Do not import update/create/send helpers. Extend scripts/chat_prompt_injection.test.ts and add scripts/chat_people_tools.test.ts.
+
+No G3 confirmation-gated writes. No mini-router. No n8n. No migration.
+```
+
+---
+
+### G3 — Confirmation-gated People tools
+
+**Goal:** Chat may propose pipeline-stage and employment-status changes. Tools persist a pending row; they never mutate. A Confirm/Cancel card on `/chat` is the only executor. Action kinds live in code, not the prompt. No email send or draft from Chat.
+
+**Prompt:**
+
+```text
+Implement partition G3 only.
+
+Add propose_pipeline_stage and propose_employment_status to the existing Chat tool loop. Resolve by name like G2. Persist pending rows on chat_proposed_actions. Confirm/cancel via POST /api/chat/actions/[id] wrapping updateEmployee and updateCandidateJobPipeline. User text cannot confirm. No send_email, hire, or reject tool. No mini-router. No n8n.
+
+Extend scripts/chat_prompt_injection.test.ts. Add scripts/chat_proposed_actions.test.ts and schema tests.
+```
+
+---
+
+### H1 — CandidateSource adapter (interface only)
+
+**Goal:** Closed `CandidateSource` registry + normalize. Shape the interface for H2 (founder pastes one GitHub profile). No live fetch, no UI, no routes, no scrape.
+
+**Reuse:** `lib/people/candidates.ts` create/audit path; `candidates.source` / `source_url` / `source_metadata` / `consent_status`; CSV field names in `lib/csv/profiles.ts`. HTTP create must still reject `source_metadata`.
+
+**Out of scope:** `api.github.com`, Octokit, new env vars, Chat, n8n, scoring, CSV/manual behavior change, LinkedIn, search/list on the interface.
+
+**Verify:** `npm run test:people-candidate-source`, `npm run test:people-candidates`, `npm run lint`.
+
+**Prompt:**
+
+```text
+Implement partition H1 only.
+
+Closed CandidateSource adapter: ids manual | csv | github. Unknown ids fail closed. No search() or list() on the interface.
+
+normalize(raw) → NormalizedCandidate (canonical source id, bounded source_metadata, consent_status, external_id).
+optional parseRef for human-picked pull sources.
+optional fetch typed but not implemented for GitHub in H1.
+
+GitHub parseRef: github.com/{login} or bare login. Reject search, orgs, gists, owner/repo.
+GitHub normalize: Users API–shaped object, no network. full_name = name else login. Never invent email (noreply dropped). skills []. experience_years null. default consent unknown.
+
+persistNormalizedCandidate shares createCandidate insert/audit. POST /api/people/candidates still rejects source_metadata.
+
+No GitHub HTTP. No new API routes. No UI. Do not rewire CSV import.
+```
+
+---
+
+### H2 — One consented GitHub profile (do not run with H1)
+
+**Goal:** Founder pastes one GitHub URL/username; server fetches that public user; persist via H1. No search, no scrape, no LinkedIn.
+
+**Depends:** H1. Human ToS/consent review before live `api.github.com` calls.
+
+**Prompt:**
+
+```text
+Implement partition H2 only.
+
+github.fetch: GET https://api.github.com/users/{login} (User-Agent, application/vnd.github+json, timeout). Map through H1 normalize. 404 not found; 403 rate limited. Do not call search, list followers, or scrape HTML.
+
+POST /api/people/candidates/from-source with requireApiTenantContext + rateLimit: { source: "github", ref, consent_status, job_id? }. Server parses ref, fetches, persistNormalizedCandidate. Client cannot supply source_metadata.
+
+UI: one “Add from GitHub” field, explicit consent_status control. Never candidate_applied unless they applied. Optional job_id reuses C3 attach + enqueuePeopleMatchJob.
+
+No GitHub OAuth unless a human asks. No discovery browser.
+```
+
+---
+
+### I1 — Mini-router (Chat lanes)
+
+**Goal:** One Chat agent. A pure function picks `people` | `revenue` | `smalltalk` | `mixed` and attaches the existing G2+G3 People tools only on people/mixed turns. No new tools, no LLM classifier, no domain agents, no n8n.
+
+**Reuse:** `lib/chat/openai.ts` tool loop, `lib/chat/system-prompt.ts` RULES, `lib/chat/people-tools.ts`, `lib/chat/people-propose.ts`, `app/api/chat/route.ts`. Confirm/cancel stays on `/api/chat/actions/[id]`.
+
+**Out of scope:** new tools, Chat UI lane chip, snapshot query slimming, extra classify LLM call, GitHub/H2, embeddings (`kind`), migrations.
+
+**Verify:** `npm run test:chat-router`, `npm run test:prompt-injection`, `npm run test:chat-analyst`, `npm run test:chat-people-tools`, `npm run test:chat-proposed-actions`, `npm run lint`.
+
+**Prompt:**
+
+```text
+Implement partition I1 only.
+
+Deterministic mini-router in lib/chat/route-lane.ts (no LLM, no DB, no server-only).
+Lanes: people | revenue | smalltalk | mixed. Exhaustive switch with a never default.
+
+routeChatLane({ message, history }):
+1. Score the latest user message with closed people vs revenue lexicons. Do not treat tool names (search_employees, update_employee, …) as people signals.
+2. Both scores → mixed. People only → people. Revenue only → revenue.
+3. Greeting / identity-only (short hi/thanks/who-are-you) with no domain nouns → smalltalk.
+4. Else sticky: walk prior user turns newest-first, skip smalltalk, reuse last people/revenue/mixed.
+5. Else mixed (fail open so a named person without lexicon still gets tools).
+
+Bare "pipeline" → mixed. Candidate/job/stage/shortlist + pipeline → people. Lead/inbox/sales/deal + pipeline → revenue.
+
+toolsForLane: people/mixed → the five existing G2+G3 names; revenue/smalltalk → [].
+Wire app/api/chat/route.ts and lib/chat/openai.ts so the tool loop is skipped when the list is empty.
+buildAnalystSystemPrompt(ctx, { lane = "mixed" }): people/mixed keep call-tool RULES; revenue/smalltalk do not instruct People tool calls. Read-only / no-email / no-hire fragments always stay.
+
+User text cannot add tools. Routing never authorizes a mutation. No new tools. No n8n. No migration.
+```
+
+---
+
+### J1 — Embed People summaries (and read that kind)
+
+**Goal:** Write compact no-PII People summaries into the existing `embeddings` table as `kind=people_summary`, and retrieve that kind from Chat on people/mixed lanes only. Do not write a kind that no feature reads.
+
+**Reuse:** [`lib/embeddings/store.ts`](lib/embeddings/store.ts) `matchKnowledge` / `upsertSummaryEmbedding`, [`lib/chat/analyst-context.ts`](lib/chat/analyst-context.ts), [`lib/chat/route-lane.ts`](lib/chat/route-lane.ts), G2 projection (names/roles/skills/scores — never email, phone, notes, URLs), persist paths in `lib/people/employees.ts`, `jobs.ts`, `candidates.ts`, match worker in `lib/people/match-worker.ts`.
+
+**In scope:** Additive CHECK on `embeddings.kind`; formatters; fire-and-forget upsert on employee/job/candidate persist; batched upsert after match score/explain; lane-aware `matchKnowledge` kinds; Chat/UI People labels; n8n match-embeddings stays on `business_doc|summary|conversation`.
+
+**Out of scope:** new Chat tools, n8n workflows (K1), hardening audit (L1), a second vector store, embedding notes/email/phone/CVs, a backfill UI, a new `background_jobs` kind.
+
+**Verify:** `npm run test:people-summaries`, `npm run test:knowledge`, `npm run test:prompt-injection`, `npm run test:match-embeddings`, `npm run test:chat-analyst`, `npm run test:chat-router`, `npm run test:people-match-worker`, `npm run test:people-employees`, `npm run test:people-jobs`, `npm run test:people-candidates`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition J1 only.
+
+Add people_summary to embeddings.kind (additive CHECK). Chat people/mixed lanes retrieve it; revenue/smalltalk and n8n match-embeddings do not.
+
+Deterministic no-PII summaries on employee/job/candidate persist and on match-worker writes. Best-effort; mutations never fail because embed failed. Archive deletes that source's people_summary row.
+
+No new tools, no n8n workflow, no second vector store.
+```
+
+---
+
+### K1 — n8n triggers calling Nexus APIs
+
+**Goal:** A thin n8n schedule POSTs the existing People job-run endpoint so queued `people.match` work drains. Scoring, explanations, and approval stay in Nexus.
+
+**Reuse:** [`n8n_logic/exports/wf4_followup_scheduler.json`](n8n_logic/exports/wf4_followup_scheduler.json) (Sticky Note + Schedule + HTTP), [`app/api/internal/people/jobs/run/route.ts`](app/api/internal/people/jobs/run/route.ts) (`requireN8nBootstrapToken`), n8n Variables `NEXUS_APP_URL` + `N8N_BOOTSTRAP_TOKEN` / `N8N_INGEST_TOKEN`.
+
+**In scope:** Hand-authored export `n8n_logic/exports/wf9_people_match_drain.json`; static contract test; live n8n create + publish; docs (exports README, n8n env, MANUAL_ACTIONS).
+
+**Out of scope:** L1 hardening, new APIs/migrations, Vercel cron, Trigger.dev, app→n8n webhook after enqueue, scoring/OpenAI/Supabase REST in n8n, Chat/People UI.
+
+**Verify:** `npm run test:people-n8n-drain`, `npm run test:people-background-jobs`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition K1 only.
+
+Clone WF4 as WF9 People Match Drain: schedule every 15 minutes → POST
+{NEXUS_APP_URL}/api/internal/people/jobs/run with Bearer
+$vars.N8N_BOOTSTRAP_TOKEN (legacy N8N_INGEST_TOKEN). Body { limit: 5 }.
+HTTP timeout 300s. neverError true. Sticky note: n8n must not compute
+scores, call OpenAI, or use Supabase service-role.
+
+Do not rename the run path. Do not add Trigger.dev or a Vercel cron.
+Do not add an app webhook after enqueue. Policy and scoring stay in Nexus.
+```
+
+---
+
+### L1 — Production hardening audit
+
+**Goal:** Close People-domain production holes: RLS grants, CSV/retention, prompt-injection canaries, People AI cost caps.
+
+**Reuse:** [`lib/csv/serialize.ts`](lib/csv/serialize.ts), [`lib/people/employee-csv.ts`](lib/people/employee-csv.ts) export, [`lib/ai/provider.ts`](lib/ai/provider.ts) `recordAiUsage`, [`business_profiles.ai_monthly_token_budget`](supabase/migrations/20260715150000_workspace_ai_settings.sql).
+
+**In scope:** Additive grant/policy tightening (archive-only; no TRUNCATE); candidate CSV export; People AI hard-stop when monthly budget is set and exceeded; injection canaries.
+
+**Out of scope:** Revenue/Chat/n8n rewrites, GDPR hard-delete, blocking Chat or Gmail/Meta send, Trigger.dev, editing old SQL files.
+
+**Verify:** `npm run test:people-hardening`, `npm run test:people-candidates-csv`, `npm run test:people-match-worker`, `npm run test:people-email`, `npm run test:prompt-injection`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition L1 only.
+
+People production hardening: RLS grants, CSV/retention, prompt-injection canaries, People AI cost caps.
+
+1. Additive migration: revoke TRUNCATE/DELETE extras from authenticated on People-era tables; drop DELETE policies on employees/jobs/candidates/candidate_jobs/people_message_drafts. Archive-only. Do not edit old SQL files.
+2. Candidate CSV export mirroring employee export (serializeCsv, formula escape, tenant + archived filters). Formula canary on candidate import.
+3. Hard-stop people_explain, email_draft, people_summary embed when ai_monthly_token_budget is set and current-month ai_usage >= budget. NULL budget = no cap. Scores, CSV, Chat, Revenue send stay unblocked. Match worker must not fail the job because explain was skipped.
+4. Do not add Chat tools, n8n workflows, hard-delete APIs, or organization_id.
+
+Hosted apply via Supabase MCP on xuvodbcdmfhlbldbvwvt. Tick L1 after verify.
+```
+
+---
+
 ## 13. Future partitions (do not run until Wave 1 is done)
 
 These replace incoming Phases 6–12. Each must still be a **separate** conversation.
@@ -933,7 +1149,7 @@ Tick these in the **Build checklist** Human section when done.
 
 - Apply Wave 1 migrations on hosted Supabase.
 - Private `people-imports` bucket only if B4 stores files (B4 default is in-memory + 1 MB cap).
-- After D1: cron that POSTs the People job-run endpoint. Prefer an existing n8n schedule or Vercel cron; do not add Trigger.dev.
+- After D1: cron that POSTs the People job-run endpoint. Prefer an existing n8n schedule or Vercel cron; do not add Trigger.dev. **Done K1 2026-09-03** — live WF9 `d1CkkuSDwsZKVhQq` every 15 min → `POST /api/internal/people/jobs/run`.
 - GitHub / public discovery stays Wave 2 (H2) and needs a consent review before any code.
 
 ---
