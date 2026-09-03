@@ -27,7 +27,8 @@ export type MatchExplanation = {
 export type MatchExplanationErrorCode =
   | "malformed_output"
   | "ai_not_configured"
-  | "provider_error";
+  | "provider_error"
+  | "budget_exceeded";
 
 export type MatchExplanationError = {
   error: MatchExplanationErrorCode;
@@ -75,7 +76,8 @@ export function isMatchExplanationError(
   return (
     (code === "malformed_output" ||
       code === "ai_not_configured" ||
-      code === "provider_error") &&
+      code === "provider_error" ||
+      code === "budget_exceeded") &&
     typeof row.message === "string"
   );
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { assertPeopleAiAllowed, peopleAiBudgetErrorMessage } from "./budget";
 import { loadPrompt } from "./prompts";
 import {
   AI_MODELS,
@@ -80,6 +81,18 @@ export async function explainMatchScore(
   params: ExplainMatchScoreParams,
 ): Promise<ExplainMatchScoreResult> {
   const model = AI_MODELS.PEOPLE_EXPLAIN;
+
+  if (params.supabase) {
+    const gate = await assertPeopleAiAllowed(params.supabase, params.teamId);
+    if (!gate.allowed) {
+      return {
+        status: "error",
+        error: "budget_exceeded",
+        message: peopleAiBudgetErrorMessage(gate),
+        model: null,
+      };
+    }
+  }
 
   if (isMockMode()) {
     const recommendation =

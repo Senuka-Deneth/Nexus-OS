@@ -1163,7 +1163,7 @@ export function SettingsView() {
                 </FieldRow>
                 <FieldRow
                   label="Monthly AI budget (tokens)"
-                  hint="Soft alert threshold against tracked AI usage. Never blocks sends. Leave empty for no budget."
+                  hint="When set, People AI (match explanations, email drafts, embeddings) pauses at 100%. Chat and Revenue sends are never blocked. Leave empty for no budget."
                 >
                   <input
                     type="number"

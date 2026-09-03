@@ -36,6 +36,7 @@ export type AiOperation =
   | "email_draft"
   | "report_summary"
   | "people_explain"
+  | "people_embed"
   | "chat"
   | "embed"
   | "caption"

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Plus,
   Search,
   Upload,
@@ -22,7 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { Spinner } from "@/components/ui/Spinner";
-import { CANDIDATES_PAGE_SIZE, candidatesQuery, jobsQuery } from "@/lib/queries/fetchers";
+import { CANDIDATES_PAGE_SIZE, candidatesQuery, exportCandidatesCsv, jobsQuery } from "@/lib/queries/fetchers";
 import { queryKeys } from "@/lib/queries/keys";
 import { cn } from "@/lib/utils";
 import { CONSENT_STATUSES, type ConsentStatus } from "@/types";
@@ -47,6 +48,8 @@ export function CandidatesList() {
   const [offset, setOffset] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
   const [githubOpen, setGithubOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -104,6 +107,18 @@ export function CandidatesList() {
   const hasPrev = offset > 0;
   const errorMsg = error instanceof Error ? error.message : null;
   const filtersActive = Boolean(q || consentFilter || includeArchived);
+
+  async function onExport() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportCandidatesCsv();
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (tenant.loading) {
     return (
@@ -171,12 +186,26 @@ export function CandidatesList() {
             <Upload className="h-4 w-4" aria-hidden />
             Import CSV
           </Button>
+          <Button variant="secondary" onClick={() => void onExport()} disabled={exporting}>
+            {exporting ? (
+              <Spinner className="h-4 w-4" label="Exporting" />
+            ) : (
+              <Download className="h-4 w-4" aria-hidden />
+            )}
+            Export CSV
+          </Button>
           <Button onClick={() => router.push("/people/candidates/new")}>
             <Plus className="h-4 w-4" aria-hidden />
             Add candidate
           </Button>
         </div>
       </header>
+
+      {exportError ? (
+        <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">
+          Could not export candidates: {exportError}
+        </p>
+      ) : null}
 
       {errorMsg && rows.length > 0 ? (
         <p className="rounded-xl border border-status-warning-border bg-status-warning-surface px-3 py-2 font-mono text-xs text-status-warning">

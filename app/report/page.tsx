@@ -149,8 +149,9 @@ function formatTokens(n: number): string {
 }
 
 /**
- * Current-month AI usage + soft budget alert (business_profiles.ai_monthly_token_budget).
- * Alert-only: warns at 80% and over budget — nothing is ever blocked.
+ * Current-month AI usage + budget (business_profiles.ai_monthly_token_budget).
+ * People AI (explanations, email drafts, people_summary embeddings) pauses at 100%.
+ * Chat and Revenue send stay alert-only and are never blocked.
  */
 function AiUsageCard({
   teamId,
@@ -230,8 +231,9 @@ function AiUsageCard({
       ) : null}
       {overBudget ? (
         <p className="mt-2 text-xs text-status-critical">
-          Over the soft monthly budget. Sends are never blocked. Review usage below or raise
-          the budget in Settings.
+          Over the monthly budget. People AI (match explanations, People email drafts,
+          embeddings) is paused. Chat and Revenue sends are never blocked. Raise the
+          budget in Profile → AI & Approval Rules.
         </p>
       ) : nearBudget ? (
         <p className="mt-2 text-xs text-status-warning">

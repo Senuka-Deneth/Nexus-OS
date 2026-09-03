@@ -1,8 +1,9 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-import { embedBatch, embedText } from "./openai";
+import { assertPeopleAiAllowed } from "@/lib/ai/budget";
+import { AI_MODELS, recordAiUsage } from "@/lib/ai/provider";
+import { embedBatch, embedBatchWithUsage, embedText } from "./openai";
 
 /**
  * Knowledge-layer store operations over the single `embeddings` table (tagged by `kind`).
@@ -293,7 +294,20 @@ export async function upsertPeopleSummaryEmbeddings(params: {
   if (prepared.length === 0) return;
 
   try {
-    const vectors = await embedBatch(prepared.map((item) => item.content));
+    const gate = await assertPeopleAiAllowed(supabase, teamId);
+    if (!gate.allowed) return;
+
+    const { vectors, inputTokens } = await embedBatchWithUsage(
+      prepared.map((item) => item.content),
+    );
+    await recordAiUsage(supabase, {
+      teamId,
+      workspaceId,
+      model: AI_MODELS.EMBED,
+      operation: "people_embed",
+      inputTokens,
+      outputTokens: 0,
+    });
     for (let i = 0; i < prepared.length; i += 1) {
       const item = prepared[i];
       await deletePeopleSummaryForSource({

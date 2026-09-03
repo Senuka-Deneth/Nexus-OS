@@ -406,6 +406,24 @@ async function runExplainPhase(
         supabase,
       });
 
+      if (result.status === "error" && result.error === "budget_exceeded") {
+        progress.explain_skipped += 1;
+        pendingEmbeds.push({
+          sourceId: row.id,
+          input: applicationEmbedInput({
+            candidateName: candidate.full_name?.trim() || "Candidate",
+            jobTitle: peopleJob.title?.trim() || "Job",
+            stage: row.stage,
+            matchScore: row.match_score,
+            dataQuality: row.data_quality,
+            insufficientReason: row.insufficient_reason,
+            matchComponents: row.match_components,
+            aiExplanation: row.ai_explanation,
+          }),
+        });
+        continue;
+      }
+
       const patch =
         result.status === "success"
           ? buildAiExplanationPatch(result.explanation, result.model)

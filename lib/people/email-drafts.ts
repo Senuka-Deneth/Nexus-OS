@@ -8,7 +8,7 @@ import {
   MAX_SITUATION_LENGTH,
   MAX_SUBJECT_LENGTH,
 } from "@/lib/ai/email-draft";
-import { draftEmail } from "@/lib/ai/draft-email";
+import { draftEmail, type DraftEmailResult } from "@/lib/ai/draft-email";
 import { AiNotConfiguredError } from "@/lib/ai/provider";
 import { writeAuditEvent } from "@/lib/audit";
 import { getCandidate } from "@/lib/people/candidates";
@@ -64,8 +64,23 @@ type ParsedLetter = {
   body?: string;
 };
 
-function fail(status: number, error: string): PeopleEmailErr {
-  return { ok: false, status, error };
+function fail(status: number, message: string): PeopleEmailErr {
+  return { ok: false, status, error: message };
+}
+
+function failDraftAi(
+  result: Extract<DraftEmailResult, { status: "error" }>,
+): PeopleEmailErr {
+  switch (result.error) {
+    case "budget_exceeded":
+      return fail(429, result.message);
+    case "malformed_output":
+      return fail(502, result.message || "Could not generate email draft");
+    default: {
+      const _exhaustive: never = result;
+      return fail(502, String(_exhaustive));
+    }
+  }
 }
 
 function isErr(value: { ok?: boolean }): value is PeopleEmailErr {
@@ -437,7 +452,7 @@ export async function generateDraft(
   const facts = composeFacts(parsed.data);
   const business = await loadBusinessSnippets(ctx);
 
-  let drafted;
+  let drafted: DraftEmailResult;
   try {
     drafted = await draftEmail({
       teamId: ctx.teamId,
@@ -454,18 +469,18 @@ export async function generateDraft(
       purpose: parsed.data.purpose,
       business,
     });
-  } catch (error) {
-    if (error instanceof AiNotConfiguredError) {
+  } catch (caught) {
+    if (caught instanceof AiNotConfiguredError) {
       return fail(503, "ai_not_configured");
     }
     return fail(
       502,
-      error instanceof Error ? error.message : "Failed to generate email draft",
+      caught instanceof Error ? caught.message : "Failed to generate email draft",
     );
   }
 
-  if (drafted.status !== "success") {
-    return fail(502, drafted.message || "Could not generate email draft");
+  if (drafted.status === "error") {
+    return failDraftAi(drafted);
   }
 
   const insert = {

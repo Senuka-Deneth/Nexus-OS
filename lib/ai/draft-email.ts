@@ -9,6 +9,7 @@ import {
   type EmailDraftInput,
   type EmailDraftMetadata,
 } from "./email-draft";
+import { assertPeopleAiAllowed, peopleAiBudgetErrorMessage } from "./budget";
 import { loadPrompt } from "./prompts";
 import {
   AI_MODELS,
@@ -48,7 +49,17 @@ export type DraftEmailMalformed = {
   model: string | null;
 };
 
-export type DraftEmailResult = DraftEmailSuccess | DraftEmailMalformed;
+export type DraftEmailBudgetExceeded = {
+  status: "error";
+  error: "budget_exceeded";
+  message: string;
+  model: string | null;
+};
+
+export type DraftEmailResult =
+  | DraftEmailSuccess
+  | DraftEmailMalformed
+  | DraftEmailBudgetExceeded;
 
 const MOCK_SUBJECT = "Follow-up on your request";
 const MOCK_BODY = [
@@ -78,6 +89,18 @@ export async function draftEmail(params: DraftEmailParams): Promise<DraftEmailRe
     purpose: params.purpose,
     business: params.business,
   };
+
+  if (params.supabase) {
+    const gate = await assertPeopleAiAllowed(params.supabase, params.teamId);
+    if (!gate.allowed) {
+      return {
+        status: "error",
+        error: "budget_exceeded",
+        message: peopleAiBudgetErrorMessage(gate),
+        model: null,
+      };
+    }
+  }
 
   if (isMockMode()) {
     const parsed = parseEmailDraftJson(

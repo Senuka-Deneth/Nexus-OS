@@ -7,22 +7,25 @@ import {
   CSV_IMPORT_MAX_ROWS,
   formatCsvImportSummary,
   planCsvImport,
+  serializeCsv,
   utf8ByteLength,
   type CsvColumnMapping,
   type CsvImportPlan,
   type CsvImportSummary,
   type PlannedCsvRow,
 } from "@/lib/csv";
+import { enqueuePeopleMatchJob } from "@/lib/people/background-jobs";
+import { ensureCandidateJobLink } from "@/lib/people/candidate-jobs";
 import {
   createCandidate,
   listActiveCandidateEmailIndex,
+  listCandidatesForExport,
   updateCandidate,
   type CandidateErr,
 } from "@/lib/people/candidates";
-import { ensureCandidateJobLink } from "@/lib/people/candidate-jobs";
-import { enqueuePeopleMatchJob } from "@/lib/people/background-jobs";
 import type { PeopleTenantContext } from "@/lib/people/employees";
 import { getJob } from "@/lib/people/jobs";
+import type { Candidate } from "@/types";
 
 export { formatCsvImportSummary };
 
@@ -35,6 +38,13 @@ export type CandidateCsvImportOk = CsvImportPlan & {
   message: string;
   attached: number;
 };
+export type CandidateCsvExportOk = {
+  ok: true;
+  filename: string;
+  csv: string;
+};
+
+const EXPORT_HEADERS = CANDIDATE_CSV_FIELDS.map((spec) => spec.name);
 
 function fail(status: number, error: string): CandidateErr {
   return { ok: false, status, error };
@@ -348,5 +358,33 @@ export async function importCandidateCsv(
     errors: collectErrors(applied),
     attached,
     message: formatCsvImportSummary(summary),
+  };
+}
+
+function candidateExportCells(row: Candidate): unknown[] {
+  return EXPORT_HEADERS.map((name) => {
+    const value = row[name as keyof Candidate];
+    return value ?? "";
+  });
+}
+
+function exportFilename(now = new Date()): string {
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(now.getUTCDate()).padStart(2, "0");
+  return `candidates-${year}-${month}-${day}.csv`;
+}
+
+export async function exportCandidatesCsv(
+  ctx: PeopleTenantContext,
+): Promise<CandidateCsvExportOk | CandidateErr> {
+  const listed = await listCandidatesForExport(ctx);
+  if (!listed.ok) return listed;
+
+  const rows = listed.data.map((row) => candidateExportCells(row));
+  return {
+    ok: true,
+    filename: exportFilename(),
+    csv: serializeCsv(EXPORT_HEADERS, rows),
   };
 }

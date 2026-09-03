@@ -257,6 +257,13 @@ function makeServiceClient() {
           filters.push((r) => r[col] === val);
           return chain;
         },
+        gte(col: string, val: unknown) {
+          filters.push((r) => String(r[col] ?? "") >= String(val));
+          return chain;
+        },
+        limit() {
+          return chain;
+        },
         in(col: string, vals: unknown[]) {
           if (col === "status") inStatuses = vals as string[];
           if (col === "id") inIds = vals;
@@ -432,6 +439,47 @@ const scoringVersionSql = readFileSync(
     const embedText = String(peopleEmbeds[peopleEmbeds.length - 1].content);
     assert(embedText.includes("Alex Dev"), "embed includes candidate name");
     assert(!embedText.includes("alex@example.com"), "embed omits email");
+  });
+
+  await check("handlePeopleMatch still scores when People AI budget is exceeded", async () => {
+    resetTables();
+    seedJob();
+    seedCandidate();
+    seedCandidateJob();
+    seedBackgroundJob();
+    tables.business_profiles = [
+      {
+        id: "bp-1",
+        team_id: TEAM_ID,
+        ai_monthly_token_budget: 10,
+      },
+    ];
+    tables.ai_usage = [
+      {
+        id: "usage-1",
+        team_id: TEAM_ID,
+        input_tokens: 8,
+        output_tokens: 4,
+        created_at: new Date().toISOString(),
+      },
+    ];
+    const supabase = makeServiceClient();
+    const outcome = await handlePeopleMatch(
+      supabase as never,
+      backgroundJobFromRow(tables.background_jobs[0]),
+    );
+    assert(outcome.status === "completed", `completed ${outcome.error ?? ""}`);
+    const cj = tables.candidate_jobs[0];
+    assert(typeof cj.match_score === "number", "match_score set");
+    assert(cj.data_quality === "sufficient", "scores persisted");
+    assert(
+      cj.ai_explanation == null,
+      "budget skip must not write an explanation error onto the scored row",
+    );
+    const progress = tables.background_jobs[0].progress as Record<string, unknown>;
+    assert(progress.scored === 1, "scored");
+    assert(progress.explained === 0, "explain skipped");
+    assert(progress.explain_skipped === 1, "explain_skipped counted");
   });
 
   await check("handlePeopleMatch writes insufficient with null score", async () => {

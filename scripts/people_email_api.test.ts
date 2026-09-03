@@ -38,6 +38,7 @@ const auditEventsTable: Row[] = [];
 const profilesTable: Row[] = [];
 const jobsTable: Row[] = [];
 const candidateJobsTable: Row[] = [];
+const aiUsageTable: Row[] = [];
 const gmailSendCalls: Row[] = [];
 const smtpSendCalls: Row[] = [];
 
@@ -201,6 +202,7 @@ function resetState(): void {
   profilesTable.length = 0;
   jobsTable.length = 0;
   candidateJobsTable.length = 0;
+  aiUsageTable.length = 0;
   gmailSendCalls.length = 0;
   smtpSendCalls.length = 0;
   authMode = "ok";
@@ -225,6 +227,7 @@ function storeFor(table: string): Row[] {
   if (table === "business_profiles") return profilesTable;
   if (table === "jobs") return jobsTable;
   if (table === "candidate_jobs") return candidateJobsTable;
+  if (table === "ai_usage") return aiUsageTable;
   return [];
 }
 
@@ -310,6 +313,13 @@ function tenantSupabase() {
         },
         eq(col: string, val: unknown) {
           filters.push((r) => r[col] === val);
+          return chain;
+        },
+        gte(col: string, val: unknown) {
+          filters.push((r) => String(r[col] ?? "") >= String(val));
+          return chain;
+        },
+        limit() {
           return chain;
         },
         in(col: string, vals: unknown[]) {
@@ -579,6 +589,25 @@ async function check(name: string, fn: () => Promise<void>): Promise<void> {
       ),
       "generate audited",
     );
+  });
+
+  await check("generate returns 429 when monthly People AI budget is exceeded", async () => {
+    const profile = profilesTable.find((row) => row.team_id === TEAM_ID);
+    assert(profile, "seeded profile");
+    profile.ai_monthly_token_budget = 10;
+    aiUsageTable.push({
+      team_id: TEAM_ID,
+      input_tokens: 8,
+      output_tokens: 4,
+      created_at: new Date().toISOString(),
+    });
+
+    const res = await postGenerate(collection.POST, GENERATE_BODY);
+    const json = (await res.json()) as { error?: string };
+    assert(res.status === 429, `status ${res.status} ${json.error ?? ""}`);
+    assert(/budget/i.test(json.error ?? ""), json.error ?? "");
+    assert(draftsTable.length === 0, "no draft persisted");
+    assert(gmailSendCalls.length === 0, "must not send");
   });
 
   await check("rejects extra fields including team_id", async () => {

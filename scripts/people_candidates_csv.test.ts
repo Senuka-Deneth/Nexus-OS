@@ -402,9 +402,11 @@ function seedCandidate(partial: Row): Row {
     "@/app/api/people/candidates/import/preview/route"
   );
   const commit = await import("@/app/api/people/candidates/import/route");
+  const exported = await import("@/app/api/people/candidates/export/route");
 
   const previewUrl = "https://example.com/api/people/candidates/import/preview";
   const importUrl = "https://example.com/api/people/candidates/import";
+  const exportUrl = "https://example.com/api/people/candidates/export";
 
   await check("preview maps candidate aliases and does not write", async () => {
     const res = await postJson(preview.POST, previewUrl, {
@@ -621,6 +623,57 @@ function seedCandidate(partial: Row): Row {
     assert(json.errors?.some((e) => e.row === 3), "row 3 in errors");
     assert(candidatesTable.length === 2, "two candidates stored");
     assert(candidateJobsTable.length === 2, "two links");
+  });
+
+  await check("=CMD formula cells fail the candidate import row", async () => {
+    const res = await postJson(preview.POST, previewUrl, {
+      job_id: JOB_ID,
+      csv: "full_name,email,notes\nAda Lovelace,ada@example.com,=CMD\n",
+    });
+    const json = (await res.json()) as {
+      summary?: { failed: number };
+      errors?: Array<{ message: string }>;
+      error?: string;
+    };
+    assert(res.status === 200, `status ${res.status} ${json.error ?? ""}`);
+    assert(json.summary?.failed === 1, `failed ${json.summary?.failed}`);
+    assert(
+      json.errors?.some((e) => /formula/i.test(e.message)),
+      "formula error message",
+    );
+    assert(candidatesTable.length === 0, "preview does not write");
+  });
+
+  await check("export omits archived and other-team rows; formula cells escaped", async () => {
+    seedCandidate({
+      full_name: "Ada Lovelace",
+      email: "ada@example.com",
+      notes: "=CMD",
+    });
+    seedCandidate({
+      full_name: "Archived One",
+      email: "arch@example.com",
+      archived_at: new Date().toISOString(),
+    });
+    seedCandidate({
+      id: "other-1",
+      team_id: OTHER_TEAM_ID,
+      full_name: "Other Team",
+      email: "other@example.com",
+    });
+
+    const res = await exported.GET(new Request(exportUrl));
+    assert(res.status === 200, `status ${res.status}`);
+    assert(
+      (res.headers.get("content-type") ?? "").includes("text/csv"),
+      "csv content type",
+    );
+    const text = await res.text();
+    assert(text.includes("full_name,email"), "header");
+    assert(text.includes("Ada Lovelace"), "includes active");
+    assert(text.includes(`"'=CMD"`), `formula escaped, got ${text}`);
+    assert(!text.includes("Archived One"), "omits archived");
+    assert(!text.includes("Other Team"), "omits other team");
   });
 
   await check("unauthorized import returns 401", async () => {

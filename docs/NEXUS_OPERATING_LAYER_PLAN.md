@@ -110,12 +110,15 @@ Tick format: `- [x] **ID** Name — YYYY-MM-DD — key files`
   Done: 2026-09-02 — `lib/chat/route-lane.ts`, `lib/chat/openai.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `scripts/chat_router.test.ts`, `scripts/chat_prompt_injection.test.ts`, `package.json`
 - [x] **J1** Embed People summaries only when a feature reads that `kind` — 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/embeddings/store.ts`
   Done: 2026-09-02 — `supabase/migrations/20260902180000_embeddings_people_summary_kind.sql`, `lib/embeddings/store.ts`, `lib/people/summaries.ts`, `lib/people/embed.ts`, `lib/people/employees.ts`, `lib/people/jobs.ts`, `lib/people/candidates.ts`, `lib/people/match-worker.ts`, `lib/chat/analyst-context.ts`, `lib/chat/system-prompt.ts`, `app/api/chat/route.ts`, `app/chat/page.tsx`, `app/api/internal/n8n/match-embeddings/route.ts`, `scripts/people_summaries.test.ts`
-- [ ] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus)
-- [ ] **L1** Production hardening audit
+- [x] **K1** n8n triggers calling Nexus APIs (policy stays in Nexus) — 2026-09-03 — `n8n_logic/exports/wf9_people_match_drain.json`, `scripts/people_n8n_drain.test.ts`
+  Done: 2026-09-03 — `n8n_logic/exports/wf9_people_match_drain.json`, `scripts/people_n8n_drain.test.ts`, `scripts/prepare_n8n_deploy_payload.mjs`, live n8n `d1CkkuSDwsZKVhQq` (published)
+- [x] **L1** Production hardening audit — 2026-09-03 — `supabase/migrations/20260903120000_people_hardening_grants.sql`, `lib/ai/budget.ts`, `app/api/people/candidates/export/route.ts`
+  Done: 2026-09-03 — `supabase/migrations/20260903120000_people_hardening_grants.sql`, `lib/ai/budget.ts`, `lib/ai/people-explain.ts`, `lib/ai/draft-email.ts`, `lib/embeddings/store.ts`, `lib/people/candidate-csv.ts`, `app/api/people/candidates/export/route.ts`, `components/people/CandidatesList.tsx`, `scripts/people_hardening.test.ts`
 
 ### Human (not agent)
 
-- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); **J1 `embeddings_people_summary_kind` applied 2026-09-02** (MCP `apply_migration`); B1+ pending
+- [ ] Apply Wave 1 migrations on hosted Supabase — **A1 `audit_events` applied 2026-09-01** (MCP `apply_migration`; remote version `20260901070541`); **A2 `people_schema` applied 2026-09-01** (remote version `20260901072620`); **D1 `background_jobs` applied 2026-09-02** (MCP `apply_migration`); **D3 `candidate_jobs_scoring_version_text` applied 2026-09-02** (remote version `20260902094158`); **F2 `people_message_drafts` applied 2026-09-02** (MCP `apply_migration`); **G3 `chat_proposed_actions` applied 2026-09-02** (MCP `apply_migration`; remote version `20260902124059`); **J1 `embeddings_people_summary_kind` applied 2026-09-02** (MCP `apply_migration`); **L1 `people_hardening_grants` applied 2026-09-03** (MCP `apply_migration`); B1+ pending
+- [x] After D1: cron that POSTs the People job-run endpoint — **K1 WF9 `d1CkkuSDwsZKVhQq` published 2026-09-03** (every 15 min → `POST /api/internal/people/jobs/run`)
 - [ ] Private `people-imports` bucket if B4 stores files (skip if B4 is in-memory) — **B4 used in-memory 2026-09-02, no bucket**
 
 ---
@@ -1053,6 +1056,64 @@ No new tools, no n8n workflow, no second vector store.
 
 ---
 
+### K1 — n8n triggers calling Nexus APIs
+
+**Goal:** A thin n8n schedule POSTs the existing People job-run endpoint so queued `people.match` work drains. Scoring, explanations, and approval stay in Nexus.
+
+**Reuse:** [`n8n_logic/exports/wf4_followup_scheduler.json`](n8n_logic/exports/wf4_followup_scheduler.json) (Sticky Note + Schedule + HTTP), [`app/api/internal/people/jobs/run/route.ts`](app/api/internal/people/jobs/run/route.ts) (`requireN8nBootstrapToken`), n8n Variables `NEXUS_APP_URL` + `N8N_BOOTSTRAP_TOKEN` / `N8N_INGEST_TOKEN`.
+
+**In scope:** Hand-authored export `n8n_logic/exports/wf9_people_match_drain.json`; static contract test; live n8n create + publish; docs (exports README, n8n env, MANUAL_ACTIONS).
+
+**Out of scope:** L1 hardening, new APIs/migrations, Vercel cron, Trigger.dev, app→n8n webhook after enqueue, scoring/OpenAI/Supabase REST in n8n, Chat/People UI.
+
+**Verify:** `npm run test:people-n8n-drain`, `npm run test:people-background-jobs`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition K1 only.
+
+Clone WF4 as WF9 People Match Drain: schedule every 15 minutes → POST
+{NEXUS_APP_URL}/api/internal/people/jobs/run with Bearer
+$vars.N8N_BOOTSTRAP_TOKEN (legacy N8N_INGEST_TOKEN). Body { limit: 5 }.
+HTTP timeout 300s. neverError true. Sticky note: n8n must not compute
+scores, call OpenAI, or use Supabase service-role.
+
+Do not rename the run path. Do not add Trigger.dev or a Vercel cron.
+Do not add an app webhook after enqueue. Policy and scoring stay in Nexus.
+```
+
+---
+
+### L1 — Production hardening audit
+
+**Goal:** Close People-domain production holes: RLS grants, CSV/retention, prompt-injection canaries, People AI cost caps.
+
+**Reuse:** [`lib/csv/serialize.ts`](lib/csv/serialize.ts), [`lib/people/employee-csv.ts`](lib/people/employee-csv.ts) export, [`lib/ai/provider.ts`](lib/ai/provider.ts) `recordAiUsage`, [`business_profiles.ai_monthly_token_budget`](supabase/migrations/20260715150000_workspace_ai_settings.sql).
+
+**In scope:** Additive grant/policy tightening (archive-only; no TRUNCATE); candidate CSV export; People AI hard-stop when monthly budget is set and exceeded; injection canaries.
+
+**Out of scope:** Revenue/Chat/n8n rewrites, GDPR hard-delete, blocking Chat or Gmail/Meta send, Trigger.dev, editing old SQL files.
+
+**Verify:** `npm run test:people-hardening`, `npm run test:people-candidates-csv`, `npm run test:people-match-worker`, `npm run test:people-email`, `npm run test:prompt-injection`, `npm run lint`, `npm run build`.
+
+**Prompt:**
+
+```text
+Implement partition L1 only.
+
+People production hardening: RLS grants, CSV/retention, prompt-injection canaries, People AI cost caps.
+
+1. Additive migration: revoke TRUNCATE/DELETE extras from authenticated on People-era tables; drop DELETE policies on employees/jobs/candidates/candidate_jobs/people_message_drafts. Archive-only. Do not edit old SQL files.
+2. Candidate CSV export mirroring employee export (serializeCsv, formula escape, tenant + archived filters). Formula canary on candidate import.
+3. Hard-stop people_explain, email_draft, people_summary embed when ai_monthly_token_budget is set and current-month ai_usage >= budget. NULL budget = no cap. Scores, CSV, Chat, Revenue send stay unblocked. Match worker must not fail the job because explain was skipped.
+4. Do not add Chat tools, n8n workflows, hard-delete APIs, or organization_id.
+
+Hosted apply via Supabase MCP on xuvodbcdmfhlbldbvwvt. Tick L1 after verify.
+```
+
+---
+
 ## 13. Future partitions (do not run until Wave 1 is done)
 
 These replace incoming Phases 6–12. Each must still be a **separate** conversation.
@@ -1088,7 +1149,7 @@ Tick these in the **Build checklist** Human section when done.
 
 - Apply Wave 1 migrations on hosted Supabase.
 - Private `people-imports` bucket only if B4 stores files (B4 default is in-memory + 1 MB cap).
-- After D1: cron that POSTs the People job-run endpoint. Prefer an existing n8n schedule or Vercel cron; do not add Trigger.dev.
+- After D1: cron that POSTs the People job-run endpoint. Prefer an existing n8n schedule or Vercel cron; do not add Trigger.dev. **Done K1 2026-09-03** — live WF9 `d1CkkuSDwsZKVhQq` every 15 min → `POST /api/internal/people/jobs/run`.
 - GitHub / public discovery stays Wave 2 (H2) and needs a consent review before any code.
 
 ---

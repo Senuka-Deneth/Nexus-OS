@@ -421,21 +421,20 @@ export async function importEmployeeCsv(
   return json;
 }
 
-function filenameFromDisposition(header: string | null): string {
-  if (!header) return "employees.csv";
+function filenameFromDisposition(header: string | null, fallback = "employees.csv"): string {
+  if (!header) return fallback;
   const match = header.match(/filename="([^"]+)"/i);
   const name = match?.[1]?.trim();
-  return name || "employees.csv";
+  return name || fallback;
 }
 
-export async function exportEmployeesCsv(): Promise<void> {
-  const res = await authenticatedFetch("/api/people/employees/export");
+async function downloadCsvResponse(res: Response, fallback: string): Promise<void> {
   if (!res.ok) {
     const json = await readJson<{ error?: string }>(res);
     throw new Error(errFrom(res, json));
   }
   const blob = await res.blob();
-  const filename = filenameFromDisposition(res.headers.get("content-disposition"));
+  const filename = filenameFromDisposition(res.headers.get("content-disposition"), fallback);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -444,6 +443,16 @@ export async function exportEmployeesCsv(): Promise<void> {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function exportEmployeesCsv(): Promise<void> {
+  const res = await authenticatedFetch("/api/people/employees/export");
+  await downloadCsvResponse(res, "employees.csv");
+}
+
+export async function exportCandidatesCsv(): Promise<void> {
+  const res = await authenticatedFetch("/api/people/candidates/export");
+  await downloadCsvResponse(res, "candidates.csv");
 }
 
 // --- People jobs (open roles) -------------------------------------------------

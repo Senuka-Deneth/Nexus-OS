@@ -124,7 +124,7 @@ export interface MetaChannelStatus {
 export interface AiUsageSummary {
   month_start: string;
   total_tokens: number;
-  /** Soft monthly budget from business_profiles.ai_monthly_token_budget; null = none. */
+  /** Monthly AI budget in total tokens; null = no cap. People AI pauses at 100%. */
   budget: number | null;
   rows: Array<{
     workflow_name: string;
@@ -158,7 +158,7 @@ export interface WorkspaceSettings {
     notification_prefs: NotificationPrefs;
     /** Revenue Analyst may render charts in chat (uses more tokens). Default true. */
     chat_visuals_enabled: boolean;
-    /** Soft monthly AI budget in total tokens; null = no budget alerting. */
+    /** Monthly AI budget in total tokens; null = no cap. People AI pauses at 100%. */
     ai_monthly_token_budget: number | null;
   } | null;
   channels: {

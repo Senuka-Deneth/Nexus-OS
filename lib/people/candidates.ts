@@ -678,3 +678,32 @@ export async function listActiveCandidateEmailIndex(
 
   return { ok: true, data: index };
 }
+
+const EXPORT_PAGE = 500;
+const EXPORT_MAX_ROWS = 10_000;
+
+/** All non-archived candidates for CSV export (not the paginated list API). */
+export async function listCandidatesForExport(
+  ctx: PeopleTenantContext,
+): Promise<CandidateListOk | CandidateErr> {
+  const all: Candidate[] = [];
+  let offset = 0;
+
+  while (all.length < EXPORT_MAX_ROWS) {
+    const { data, error } = await ctx.supabase
+      .from("candidates")
+      .select("*")
+      .eq("team_id", ctx.teamId)
+      .is("archived_at", null)
+      .order("full_name", { ascending: true })
+      .range(offset, offset + EXPORT_PAGE - 1);
+
+    if (error) return fail(500, error.message);
+    const rows = (data ?? []) as Candidate[];
+    all.push(...rows);
+    if (rows.length < EXPORT_PAGE) break;
+    offset += EXPORT_PAGE;
+  }
+
+  return { ok: true, data: all, count: all.length };
+}
